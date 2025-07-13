@@ -525,14 +525,156 @@
         scrambleMap['444bf'] = scrambleMap['444'];
         scrambleMap['555bf'] = scrambleMap['555'];
 
+        class CubeState {
+            constructor(n) {
+                this.n = n;
+                const colors = ['W', 'O', 'G', 'R', 'B', 'Y'];
+                this.faces = {};
+                ['U', 'L', 'F', 'R', 'B', 'D'].forEach((f, i) => {
+                    this.faces[f] = Array(n * n).fill(colors[i])
+                });
+            }
+            move(m) {
+                const match = m.match(/(\d*)?([RUFBLDxy])(w)?(['2])?/);
+                if (!match) return;
+                let [_, depthStr, baseMove, wide, modifier] = match;
+                let depth = 1;
+                if (wide) depth = depthStr ? parseInt(depthStr) : 2;
+                else if (depthStr) depth = parseInt(depthStr);
+                const turns = modifier === "'" ? -1 : modifier === '2' ? 2 : 1;
+                const axis = {
+                    R: 'x',
+                    L: 'x',
+                    U: 'y',
+                    D: 'y',
+                    F: 'z',
+                    B: 'z'
+                } [baseMove];
+                let slices = [],
+                    dir = turns;
+                if (['L', 'D', 'B'].includes(baseMove)) dir *= -1;
+                if (['R', 'U', 'F'].includes(baseMove)) slices = Array.from({
+                    length: depth
+                }, (_, i) => this.n - 1 - i).reverse();
+                else if (['L', 'D', 'B'].includes(baseMove)) slices = Array.from({
+                    length: depth
+                }, (_, i) => i);
+                this._turn(axis, slices, dir);
+            }
+            _turn(axis, slices, direction) {
+                const quarterTurns = direction === 2 ? 2 : direction === -1 ? 3 : 1;
+                slices.forEach(sliceIndex => {
+                    if (axis === 'x') {
+                        if (sliceIndex === 0) this._rF('L', 3 * quarterTurns);
+                        if (sliceIndex === this.n - 1) this._rF('R', quarterTurns);
+                    } else if (axis === 'y') {
+                        if (sliceIndex === 0) this._rF('U', quarterTurns);
+                        if (sliceIndex === this.n - 1) this._rF('D', 3 * quarterTurns);
+                    } else if (axis === 'z') {
+                        if (sliceIndex === 0) this._rF('F', quarterTurns);
+                        if (sliceIndex === this.n - 1) this._rF('B', 3 * quarterTurns);
+                    }
+                });
+                for (let i = 0; i < quarterTurns; i++) {
+                    slices.forEach(sliceIndex => {
+                        const cycle = {
+                            x: ['U', 'B', 'D', 'F'],
+                            y: ['F', 'R', 'B', 'L'],
+                            z: ['U', 'L', 'D', 'R']
+                        } [axis];
+                        const temp = [];
+                        for (let j = 0; j < this.n; j++) temp.push(this.gS(cycle[0], axis, sliceIndex, j));
+                        for (let f = 0; f < 3; f++) {
+                            for (let j = 0; j < this.n; j++) this.sS(cycle[f], axis, sliceIndex, j, this.gS(cycle[f + 1], axis, sliceIndex, j));
+                        }
+                        for (let j = 0; j < this.n; j++) this.sS(cycle[3], axis, sliceIndex, j, temp[j]);
+                    })
+                }
+            }
+            _rF(face, turns = 1) {
+                for (let i = 0; i < turns; i++) {
+                    const temp = [...this.faces[face]];
+                    for (let j = 0; j < this.n * this.n; j++) {
+                        const row = j % this.n,
+                            col = Math.floor(j / this.n);
+                        this.faces[face][j] = temp[this.n * (this.n - 1 - row) + col];
+                    }
+                }
+            }
+            gS(face, axis, slice, i) {
+                const n = this.n;
+                const map = {
+                    x: {
+                        U: this.faces.U[i * n + slice],
+                        F: this.faces.F[i * n + slice],
+                        D: this.faces.D[i * n + slice],
+                        B: this.faces.B[(n - 1 - i) * n + (n - 1 - slice)]
+                    },
+                    y: {
+                        F: this.faces.F[slice * n + i],
+                        L: this.faces.L[slice * n + i],
+                        B: this.faces.B[slice * n + (n - 1 - i)],
+                        R: this.faces.R[slice * n + i]
+                    },
+                    z: {
+                        U: this.faces.U[(n - 1 - slice) * n + i],
+                        L: this.faces.L[i * n + (n - 1 - slice)],
+                        D: this.faces.D[slice * n + (n - 1 - i)],
+                        R: this.faces.R[(n - 1 - i) * n + slice]
+                    }
+                };
+                return map[axis][face];
+            }
+            sS(face, axis, slice, i, val) {
+                const n = this.n;
+                const map = {
+                    x: {
+                        U: () => this.faces.U[i * n + slice] = val,
+                        F: () => this.faces.F[i * n + slice] = val,
+                        D: () => this.faces.D[i * n + slice] = val,
+                        B: () => this.faces.B[(n - 1 - i) * n + (n - 1 - slice)] = val
+                    },
+                    y: {
+                        F: () => this.faces.F[slice * n + i] = val,
+                        L: () => this.faces.L[slice * n + i] = val,
+                        B: () => this.faces.B[slice * n + (n - 1 - i)] = val,
+                        R: () => this.faces.R[slice * n + i] = val
+                    },
+                    z: {
+                        U: () => this.faces.U[(n - 1 - slice) * n + i] = val,
+                        L: () => this.faces.L[i * n + (n - 1 - slice)] = val,
+                        D: () => this.faces.D[slice * n + (n - 1 - i)] = val,
+                        R: () => this.faces.R[(n - 1 - i) * n + slice] = val
+                    }
+                };
+                map[axis][face]();
+            }
+        }
+
         const puzzleVisualizer = {
-            render(eventId, scramble, container) {
-                const puzzleKey = eventId.replace('bf', '').replace('oh', '').replace('fm', '');
-                const imageUrl = `https://tnoodle.kuebiko-cs.com/scrambleimg-2d.php?puzzle=${puzzleKey}&scramble=${scramble}`;
-                container.innerHTML = `<img src="${imageUrl}" alt="Scramble for ${eventId}" />`;
+            renderNxN(size, scrambleStr, container) {
+                let faces;
+                try {
+                    const cube = new CubeState(size);
+                    scrambleStr.split(' ').filter(m => m).forEach(m => cube.move(m));
+                    faces = cube.faces;
+                } catch (e) {
+                    console.error("Scramble Error:", e);
+                    const cube = new CubeState(size);
+                    faces = cube.faces;
+                }
+                const stickerSize = Math.max(12, 32 / size);
+                const faceWidth = stickerSize * size;
+                container.innerHTML = `<div class="nxn-viz" style="width:${faceWidth * 4 + 10}px;height:${faceWidth * 3 + 8}px;margin:auto;grid-template-columns:repeat(4, ${faceWidth + 2}px);grid-template-rows:repeat(3, ${faceWidth + 2}px);"><div style="grid-area:1/2" id="face-U" class="face"></div><div style="grid-area:2/1" id="face-L" class="face"></div><div style="grid-area:2/2" id="face-F" class="face"></div><div style="grid-area:2/3" id="face-R" class="face"></div><div style="grid-area:2/4" id="face-B" class="face"></div><div style="grid-area:3/2" id="face-D" class="face"></div></div>`;
+                for (const key in faces) {
+                    const faceEl = container.querySelector(`#face-${key}`);
+                    faceEl.style.gridTemplateColumns = `repeat(${size},1fr)`;
+                    faces[key].forEach(color => {
+                        faceEl.innerHTML += `<div class="sticker color-${color}" style="padding-bottom:100%"></div>`
+                    });
+                }
             }
         };
-
 
         const timerElement = document.getElementById("timer");
         const timerContainer = document.getElementById("timer-container");
@@ -611,7 +753,8 @@
                 scrambleElement.innerHTML = newScramble.replace(/\n/g, '<br>');
                 const visualizableEvents = ['222', '333', '444', '555', '666', '777', '333bf', '444bf', '555bf'];
                 if (visualizableEvents.includes(eventId)) {
-                    puzzleVisualizer.render(eventId, newScramble, puzzleVizContainer);
+                    const size = parseInt(eventId[0]);
+                    puzzleVisualizer.renderNxN(size, newScramble, puzzleVizContainer);
                     puzzleVizContainer.classList.add('visible-viz');
                 }
             }, 100);
