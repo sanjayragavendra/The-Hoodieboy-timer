@@ -3,217 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3x3 Cube Timer</title>
-    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/sanjayragavendra/The-Hoodieboy-timer/main/cube-unscreen.gif">
+    <title>Rubik's Cube Timer</title>
     <link href="https://fonts.googleapis.com/css2?family=Lato&family=Rubik+Mono+One&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
     <script type="module" src="https://cdn.cubing.net/v0/js/cubing/scramble"></script>
-
+    
     <style>
-        /* General body and container styles from the timer repo */
+        /* Base styles from the hi-tech UI */
         body {
-            background-color: #272727;
-            color: #E2E2E2;
+            background-color: #0b0f19;
+            background-image: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="stars" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse"><circle fill="%231a2336" cx="1" cy="1" r="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(%23stars)"/></svg>');
             font-family: 'Lato', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            min-height: 100vh;
+            color: #E2E2E2;
             margin: 0;
-            user-select: none;
-            overflow-y: auto; /* Enable vertical scrolling */
-        }
-
-        .main-container {
-            text-align: center;
-            background-color: #333;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            max-width: 90%;
-            width: 700px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-            margin: 20px 0;
+            display: grid;
+            grid-template-areas:
+                "left-panel timer-display"
+                "bottom-left bottom-right";
+            grid-template-columns: 1fr 2fr;
+            grid-template-rows: 1fr auto;
+            gap: 20px;
+            min-height: 100vh;
+            overflow-y: auto;
+            user-select: none;
         }
 
-        .timer-header {
+        /* General Panel Styling */
+        .panel {
+            background-color: rgba(26, 35, 54, 0.7);
+            border: 2px solid rgba(40, 50, 70, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-family: 'Rubik Mono One', monospace;
-            font-size: 2rem;
-            color: #fff;
-            margin-top: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
-        /* New scramble display styles */
-        #scramble-display {
+        .panel-header {
             font-family: 'Rubik Mono One', monospace;
             font-size: 1.2rem;
-            color: #d1d1d1;
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #444;
-            border-radius: 5px;
-            letter-spacing: 2px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-width: 100%;
+            color: #8be9fd; /* Neon blue */
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px #8be9fd;
         }
 
-        /* Timer display */
-        .timer-display {
-            font-family: 'Rubik Mono One', monospace;
-            font-size: 6rem;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            transition: color 0.1s ease-in-out;
-            margin: 20px 0;
+        /* Left Panel - Top */
+        .scramble-panel {
+            grid-area: left-panel;
         }
-
-        /* Buttons and controls */
-        .controls {
+        
+        .scramble-container {
             display: flex;
+            flex-direction: column;
             gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+        }
+        
+        .event-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .event-selector label {
+            font-size: 1rem;
+            color: #d1d1d1;
+        }
+
+        .event-selector select {
+            background-color: #1a2336;
+            color: #d1d1d1;
+            border: 1px solid #444;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: 'Lato', sans-serif;
+        }
+
+        #scramble-display {
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 1.1rem;
+            color: #ff79c6; /* Pink */
+            text-shadow: 0 0 3px #ff79c6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
             justify-content: center;
         }
 
-        .btn {
-            background-color: #555;
-            color: #eee;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.2s, transform 0.2s;
-        }
-
-        .btn:hover {
-            background-color: #777;
-            transform: scale(1.05);
-        }
-
-        .btn-start {
-            background-color: #28a745;
-        }
-
-        .btn-start:hover {
-            background-color: #218838;
-        }
-
-        .btn-stop {
-            background-color: #dc3545;
-        }
-
-        .btn-stop:hover {
-            background-color: #c82333;
-        }
-
-        .btn-reset {
-            background-color: #007bff;
-        }
-
-        .btn-reset:hover {
-            background-color: #0069d9;
-        }
-
-        /* Scramble visualization styles */
+        /* Twisty Player */
         #twisty-player-container {
             width: 100%;
-            height: 350px;
-            margin-top: 20px;
-            position: relative;
+            height: 250px;
+            background-color: #1a2336;
+            border-radius: 8px;
+            border: 1px solid #444;
         }
 
         twisty-player {
             width: 100%;
             height: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
         }
         
-        #twisty-player-container.loading::before {
-            content: "Loading Cube...";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #999;
-            font-size: 1.2rem;
-            z-index: 10;
+        /* Central Timer Display */
+        .timer-display-container {
+            grid-area: timer-display;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #timer-display {
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 10rem;
+            color: #fff;
+            text-shadow: 0 0 10px #fff, 0 0 20px #fff;
+            transition: color 0.2s ease-in-out;
+        }
+
+        /* Left Panel - Bottom (History) */
+        .history-panel {
+            grid-area: bottom-left;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            color: #d1d1d1;
+        }
+        
+        .history-table th, .history-table td {
+            border-bottom: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .history-table th {
+            color: #8be9fd;
+        }
+        
+        /* Right Panel - Bottom (Stats and Data) */
+        .stats-data-panel {
+            grid-area: bottom-right;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .stats-panel, .data-panel {
+            background-color: rgba(26, 35, 54, 0.7);
+            border: 2px solid rgba(40, 50, 70, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stats-panel p {
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #d1d1d1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats-panel span {
+            color: #50fa7b; /* Green */
+        }
+        
+        .data-panel .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: #6272a4;
+            color: #f8f8f2;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-family: 'Lato', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .btn:hover {
+            background-color: #444a72;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                grid-template-areas:
+                    "left-panel"
+                    "timer-display"
+                    "bottom-left"
+                    "bottom-right";
+                grid-template-columns: 1fr;
+            }
+            #timer-display {
+                font-size: 6rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="timer-header">
-            <h1>The Hoodieboy Timer</h1>
+    
+    <div class="scramble-panel panel">
+        <div class="scramble-container">
+            <div class="event-selector">
+                <label for="event">Event</label>
+                <select id="event-select">
+                    <option value="333">3x3x3 Cube</option>
+                    </select>
+            </div>
+            <div id="scramble-display">Loading scramble...</div>
+            <div id="twisty-player-container">
+                <twisty-player
+                    id="cube-player"
+                    alg=""
+                    hint-facelets="none"
+                    control-panel="none"
+                    interaction-mode="none"
+                    visualization="3D"
+                    back-view="left"
+                    style="display: block;"
+                ></twisty-player>
+            </div>
+            <div class="controls" style="justify-content: center; gap: 10px;">
+                <button id="show2DBtn" class="btn">Show 2D</button>
+                <button id="show3DBtn" class="btn">Show 3D</button>
+            </div>
         </div>
-
-        <div id="scramble-display">Loading scramble...</div>
-        
-        <div id="twisty-player-container">
-            <twisty-player
-                id="cube-player"
-                alg=""
-                hint-facelets="none"
-                control-panel="none"
-                interaction-mode="none"
-                visualization="3D"
-                back-view="left"
-            ></twisty-player>
+    </div>
+    
+    <div class="timer-display-container">
+        <div id="timer-display">0.00</div>
+    </div>
+    
+    <div class="history-panel panel">
+        <div class="panel-header">History</div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="history-body">
+                </tbody>
+        </table>
+    </div>
+    
+    <div class="stats-data-panel">
+        <div class="stats-panel">
+            <div class="panel-header">Stats</div>
+            <p>Ao5: <span id="ao5">N/A</span></p>
+            <p>Ao12: <span id="ao12">N/A</span></p>
+            <p>Best: <span id="best">N/A</span></p>
+            <p>Worst: <span id="worst">N/A</span></p>
         </div>
-
-        <div class="controls">
-            <button id="show2DBtn" class="btn">Show 2D</button>
-            <button id="show3DBtn" class="btn">Show 3D</button>
-            <button id="generateScrambleBtn" class="btn btn-reset">New Scramble</button>
-        </div>
-
-        <div class="timer-display" id="timer-display">0.00</div>
-
-        <div class="controls">
-            <button id="start-btn" class="btn btn-start" style="display: none;">Start</button>
-            <button id="stop-btn" class="btn btn-stop" style="display: none;">Stop</button>
-            <button id="reset-btn" class="btn btn-reset">Reset</button>
+        <div class="data-panel">
+            <div class="panel-header">Data</div>
+            <div class="controls">
+                <button id="import-csv-btn" class="btn">Import CSV File</button>
+                <button id="import-txt-btn" class="btn">Import TXT File</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { randomScrambleForEvent } from "https://cdn.cubing.net/v0/js/cubing/scramble";
-        
-        // Timer Variables
+
+        // DOM Elements
         const timerDisplay = document.getElementById('timer-display');
         const scrambleDisplay = document.getElementById('scramble-display');
         const cubePlayer = document.getElementById('cube-player');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const resetBtn = document.getElementById('reset-btn');
+        const historyBody = document.getElementById('history-body');
+        const ao5Display = document.getElementById('ao5');
+        const ao12Display = document.getElementById('ao12');
+        const bestDisplay = document.getElementById('best');
+        const worstDisplay = document.getElementById('worst');
         const show2DBtn = document.getElementById('show2DBtn');
         const show3DBtn = document.getElementById('show3DBtn');
-        const generateScrambleBtn = document.getElementById('generateScrambleBtn');
 
+        // Timer Variables
         let isRunning = false;
-        let startTime;
-        let elapsedTime = 0;
-        let timerInterval;
+        let startTime = 0;
+        let timerInterval = null;
         let isHoldingSpace = false;
-        let spaceHoldTimeout;
+        let spaceHoldTimeout = null;
         let currentScramble = "";
+        let solves = [];
 
         // Scramble and Visualization Functions
         async function generateScramble() {
@@ -232,68 +323,97 @@
 
         function updateVisualization(mode) {
             cubePlayer.visualization = mode;
-            // Re-apply the current scramble to ensure the player updates
             if (currentScramble) {
                 cubePlayer.alg = currentScramble;
             }
         }
 
-        // Timer Functions
+        // Timer and Stats Logic
         function formatTime(milliseconds) {
-            let seconds = Math.floor(milliseconds / 1000);
-            let minutes = Math.floor(seconds / 60);
-            seconds = seconds % 60;
-            let centiseconds = Math.floor((milliseconds % 1000) / 10);
-            
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const centiseconds = Math.floor((milliseconds % 1000) / 10);
             return `${minutes > 0 ? minutes + ':' : ''}${seconds.toString().padStart(minutes > 0 ? 2 : 1, '0')}.${centiseconds.toString().padStart(2, '0')}`;
         }
 
         function updateTimer() {
-            elapsedTime = Date.now() - startTime;
+            const elapsedTime = Date.now() - startTime;
             timerDisplay.textContent = formatTime(elapsedTime);
         }
 
         function startTimer() {
             if (isRunning) return;
             isRunning = true;
-            startTime = Date.now() - elapsedTime;
+            startTime = Date.now();
             timerInterval = setInterval(updateTimer, 10);
-            timerDisplay.style.color = '#fff';
-            generateScramble(); // Generate a new scramble for the next solve
         }
 
         function stopTimer() {
             if (!isRunning) return;
             isRunning = false;
             clearInterval(timerInterval);
+            const solveTime = Date.now() - startTime;
+            solves.unshift(solveTime); // Add to the beginning of the array
+            updateHistoryTable();
+            updateStats();
+            generateScramble();
         }
 
-        function resetTimer() {
-            stopTimer();
-            elapsedTime = 0;
-            timerDisplay.textContent = "0.00";
-            timerDisplay.style.color = '#fff';
-            generateScramble(); // Generate a scramble on reset
+        function updateHistoryTable() {
+            historyBody.innerHTML = '';
+            solves.forEach((time, index) => {
+                const row = historyBody.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                const cell3 = row.insertCell(2);
+                cell1.textContent = solves.length - index;
+                cell2.textContent = formatTime(time);
+                cell3.textContent = '...'; // Placeholder for actions
+            });
         }
 
-        // Event Listeners for Buttons
-        startBtn.addEventListener('click', startTimer);
-        stopBtn.addEventListener('click', stopTimer);
-        resetBtn.addEventListener('click', resetTimer);
-        show2DBtn.addEventListener('click', () => updateVisualization("2D"));
-        show3DBtn.addEventListener('click', () => updateVisualization("3D"));
-        generateScrambleBtn.addEventListener('click', generateScramble);
+        function updateStats() {
+            if (solves.length > 0) {
+                const bestTime = Math.min(...solves);
+                const worstTime = Math.max(...solves);
+                bestDisplay.textContent = formatTime(bestTime);
+                worstDisplay.textContent = formatTime(worstTime);
+            } else {
+                bestDisplay.textContent = 'N/A';
+                worstDisplay.textContent = 'N/A';
+            }
 
-        // Event Listeners for Keyboard
+            // Ao5
+            if (solves.length >= 5) {
+                const lastFive = solves.slice(0, 5);
+                const sortedFive = [...lastFive].sort((a, b) => a - b);
+                const ao5 = (sortedFive[1] + sortedFive[2] + sortedFive[3]) / 3;
+                ao5Display.textContent = formatTime(ao5);
+            } else {
+                ao5Display.textContent = 'N/A';
+            }
+
+            // Ao12
+            if (solves.length >= 12) {
+                const lastTwelve = solves.slice(0, 12);
+                const sortedTwelve = [...lastTwelve].sort((a, b) => a - b);
+                const ao12 = (sortedTwelve.slice(1, 11).reduce((sum, time) => sum + time, 0)) / 10;
+                ao12Display.textContent = formatTime(ao12);
+            } else {
+                ao12Display.textContent = 'N/A';
+            }
+        }
+
+        // Keyboard Event Listeners
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && !isHoldingSpace) {
                 e.preventDefault();
                 isHoldingSpace = true;
                 if (!isRunning) {
-                    timerDisplay.style.color = '#28a745'; // Green pre-start color
+                    timerDisplay.style.color = '#50fa7b'; // Green pre-start color
                     spaceHoldTimeout = setTimeout(() => {
-                         timerDisplay.style.color = '#ffc107'; // Yellow ready color
-                    }, 500); // 500ms for pre-start
+                        timerDisplay.style.color = '#ffc107'; // Yellow ready color
+                    }, 500);
                 }
             }
         });
@@ -309,14 +429,18 @@
                     if (timerDisplay.style.color === 'rgb(255, 193, 7)') { // Check if timer is yellow/ready
                         startTimer();
                     } else {
-                        timerDisplay.style.color = '#fff'; // Reset color if not started
+                        timerDisplay.style.color = '#fff';
                     }
                 }
             }
         });
         
+        // Button Event Listeners
+        show2DBtn.addEventListener('click', () => updateVisualization("2D"));
+        show3DBtn.addEventListener('click', () => updateVisualization("3D"));
+
         // Initial setup
-        window.onload = resetTimer;
+        window.onload = generateScramble;
     </script>
 </body>
 </html>
