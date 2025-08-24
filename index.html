@@ -1,1274 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy timer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <title>3x3 Cube Timer</title>
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/sanjayragavendra/The-Hoodieboy-timer/main/cube-unscreen.gif">
+    <link href="https://fonts.googleapis.com/css2?family=Lato&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script type="module" src="https://cdn.cubing.net/v0/js/cubing/twisty"></script>
+    <script type="module" src="https://cdn.cubing.net/v0/js/cubing/scramble"></script>
+
     <style>
+        /* General body and container styles from the timer repo */
         body {
-            font-family: 'Roboto Mono', monospace;
-            color: white;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.7);
-            background-color: #0c0a15;
-            overflow: hidden;
+            background-color: #272727;
+            color: #E2E2E2;
+            font-family: 'Lato', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+            overflow: hidden; /* Hide scrollbars */
         }
 
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
+        .main-container {
+            text-align: center;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 700px;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
         }
 
-        .panel {
-            background: rgba(17, 24, 39, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
+        .timer-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        /* ---- Timer State Colors ---- */
-        .timer-inspecting {
-            color: #67E8F9;
-            text-shadow: 0 0 15px #67E8F9;
+        h1 {
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 2rem;
+            color: #fff;
+            margin-top: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* New scramble display styles */
+        #scramble-display {
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 1.2rem;
+            color: #d1d1d1;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 5px;
+            letter-spacing: 2px;
+            white-space: pre-wrap; /* Allows words to wrap */
+            word-wrap: break-word; /* Breaks long words */
+            max-width: 100%;
         }
 
-        .timer-ready {
-            color: #34D399;
-            text-shadow: 0 0 15px #34D399;
-        }
-
-        .timer-running {
-            color: #F87171;
-            text-shadow: 0 0 20px #F87171;
-        }
-
-        .timer-penalty {
-            color: #FBBF24;
-            text-shadow: 0 0 15px #FBBF24;
-        }
-
+        /* Timer display */
         .timer-display {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2.5rem, 12vw, 8rem);
-            transition: color 0.3s ease, text-shadow 0.3s ease, font-size: 0.5s ease-in-out;
+            font-family: 'Rubik Mono One', monospace;
+            font-size: 6rem;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: color 0.1s ease-in-out;
+            margin: 20px 0;
         }
 
-        /* ---- Animations & Transitions ---- */
-        .timer-alert-flash {
-            animation: flash-animation 0.5s ease-out;
+        /* Buttons and controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
         }
 
-        @keyframes flash-animation {
-            50% {
-                transform: scale(1.05);
-                color: #FBBF24;
-                text-shadow: 0 0 20px #FBBF24;
-            }
+        .btn {
+            background-color: #555;
+            color: #eee;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.2s, transform 0.2s;
         }
 
-        .inspection-tick {
-            animation: inspection-pulse 0.5s ease-in-out;
+        .btn:hover {
+            background-color: #777;
+            transform: scale(1.05);
         }
 
-        @keyframes inspection-pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.15);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        @keyframes new-best-celebrate {
-            0% {
-                transform: scale(1);
-                color: white;
-                text-shadow: none;
-            }
-            25% {
-                transform: scale(1.15);
-                color: #fde047;
-                text-shadow: 0 0 10px #fde047, 0 0 30px #fde047, 0 0 60px #f59e0b;
-            }
-            50% {
-                transform: scale(1.05);
-                color: #bef264;
-                text-shadow: 0 0 10px #bef264, 0 0 30px #84cc16;
-            }
-            75% {
-                transform: scale(1.15);
-                color: #67E8F9;
-                text-shadow: 0 0 10px #67E8F9, 0 0 30px #06b6d4;
-            }
-            100% {
-                transform: scale(1);
-                color: white;
-                text-shadow: none;
-            }
-        }
-
-        .new-best-animation {
-            animation: new-best-celebrate 2.5s ease-in-out;
-        }
-
-        @keyframes new-worst-drop {
-            0% {
-                transform: translateY(-80px) scaleY(1.2);
-                opacity: 0;
-            }
-            20% {
-                transform: translateY(0) scaleY(1);
-                opacity: 1;
-            }
-            40% {
-                transform: translateY(-20px) scaleY(1.05);
-            }
-            60% {
-                transform: translateY(0) scaleY(1);
-            }
-            100% {
-                transform: translateY(0) scaleY(1);
-            }
-        }
-
-        .new-worst-animation {
-            animation: new-worst-drop 1.2s cubic-bezier(0.5, 0, 0.5, 1.5);
-            color: #F87171;
-            text-shadow: 0 0 15px #F87171;
-        }
-
-        .scramble-text {
-            font-size: clamp(0.9rem, 2.5vw, 1.4rem);
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            min-height: 40px;
-            line-height: 1.4;
-        }
-
-        .history-table tr:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .custom-select {
-            background-color: rgba(31, 41, 55, 0.7);
-            color: #d1d5db;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .status-dnf {
-            color: #f87171;
-            font-weight: bold;
-        }
-
-        .status-plus2 {
-            color: #fbbf24;
-        }
-
-        #puzzle-visualization {
-            margin: 1rem auto 0;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out 0.2s;
-        }
-
-        #puzzle-visualization.visible-viz {
-            opacity: 1;
-        }
-
-        .sticker {
-            border-radius: 15%;
-            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
-        }
-
-        .color-W {
-            background-color: #f8f9fa;
-        }
-        .color-Y {
-            background-color: #ffd400;
-        }
-        .color-G {
+        .btn-start {
             background-color: #28a745;
         }
-        .color-B {
-            background-color: #007bff;
+
+        .btn-start:hover {
+            background-color: #218838;
         }
-        .color-R {
+
+        .btn-stop {
             background-color: #dc3545;
         }
-        .color-O {
-            background-color: #fd7e14;
+
+        .btn-stop:hover {
+            background-color: #c82333;
         }
 
-        .nxn-viz {
-            display: grid;
-            gap: 2px;
+        .btn-reset {
+            background-color: #007bff;
         }
 
-        .face {
-            display: grid;
-            gap: 2px;
-            background-color: #1a1a1a;
-            padding: 2px;
-            border-radius: 4px;
+        .btn-reset:hover {
+            background-color: #0069d9;
         }
 
-        #left-column,
-        #stats-panel,
-        #contact-me-box {
-            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        /* Scramble visualization styles */
+        #twisty-player-container {
+            width: 100%;
+            height: 350px;
+            margin-top: 20px;
+            position: relative;
         }
 
-        #timer-container {
-            transition: all 0.5s ease-in-out;
+        twisty-player {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
         }
 
-        body.focus-mode #left-column {
-            opacity: 0;
-            transform: translateX(-100%);
-            pointer-events: none;
-        }
-
-        body.focus-mode #stats-panel {
-            opacity: 0;
-            transform: scale(0.9);
-            pointer-events: none;
-        }
-
-        body.focus-mode #contact-me-box {
-            opacity: 0;
-            transform: translateY(100%);
-            pointer-events: none;
-        }
-
-        body.focus-mode #timer-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 100;
-            margin: 0;
-            padding: 0;
-            flex-grow: 1;
-            background: rgba(12, 10, 21, 0.25);
-        }
-
-        body.focus-mode #timer {
-            font-size: clamp(5rem, 25vw, 18rem);
-        }
-
-        #contact-me-box.visible {
-            opacity: 1;
-            transform: translate(-50%, 0);
+        #twisty-player-container.loading::before {
+            content: "Loading Cube...";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #999;
+            font-size: 1.2rem;
         }
     </style>
 </head>
-
 <body>
-    <canvas id="bg-canvas"></canvas>
-
-    <div class="relative w-full h-screen flex flex-col md:flex-row p-2 sm:p-4 gap-4 z-10">
-        <div id="left-column" class="w-full md:w-1/2 lg:w-1/3 flex flex-col gap-4">
-            <div id="scramble-panel" class="panel p-4 shadow-lg">
-                <div class="flex justify-center items-center mb-2 gap-4">
-                    <h2 class="text-center text-lg sm:text-xl text-cyan-300">Event</h2>
-                    <select id="event-selector" class="custom-select rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cyan-400"></select>
-                </div>
-                <p id="scramble" class="scramble-text text-center font-bold">Generating scramble...</p>
-                <div id="puzzle-visualization"></div>
-            </div>
-            <div id="history-panel" class="panel p-4 shadow-lg flex-1 flex flex-col min-h-0">
-                <h2 class="text-center text-lg sm:text-xl text-cyan-300 mb-2 flex-shrink-0">History</h2>
-                <div id="history-scroll-container" class="overflow-y-auto flex-grow">
-                    <table class="w-full text-center text-sm sm:text-base history-table">
-                        <thead class="sticky top-0 bg-gray-800/80 backdrop-blur-sm">
-                            <tr>
-                                <th class="p-2">#</th>
-                                <th class="p-2">Time</th>
-                                <th class="p-2">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-body"></tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="main-container">
+        <div class="timer-header">
+            <h1>The Hoodieboy Timer</h1>
         </div>
 
-        <div id="right-column" class="w-full md:w-1/2 lg:w-2/3 flex flex-col gap-4">
-            <div id="timer-container" class="panel flex-1 flex items-center justify-center">
-                <h1 id="timer" class="timer-display font-black tracking-tighter">0.00</h1>
-            </div>
-            <div id="stats-panel" class="panel p-4 shadow-lg flex flex-col sm:flex-row justify-around items-center">
-                <div class="text-center">
-                    <h2 class="text-lg sm:text-xl text-cyan-300 mb-2">Stats</h2>
-                    <div class="grid grid-cols-2 gap-x-4">
-                        <p>Ao5: <span id="ao5" class="font-bold">N/A</span></p>
-                        <p>Ao12: <span id="ao12" class="font-bold">N/A</span></p>
-                        <p>Best: <span id="best" class="font-bold">N/A</span></p>
-                        <p>Worst: <span id="worst" class="font-bold">N/A</span></p>
-                    </div>
-                </div>
-                <div class="text-center mt-4 sm:mt-0">
-                    <h2 class="text-lg sm:text-xl text-cyan-300 mb-2">Data</h2>
-                    <div class="flex justify-center gap-2">
-                        <button id="import-btn" class="text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded">Import</button>
-                        <button id="export-csv-btn" class="text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded">Import CSV File</button>
-                        <button id="export-txt-btn" class="text-sm bg-cyan-800 hover:bg-cyan-900 text-white font-bold py-2 px-3 rounded">Import TXT File</button>
-                    </div>
-                    <input type="file" id="import-file-input" class="hidden" accept=".csv,text/csv,.txt">
-                </div>
-            </div>
+        <div id="scramble-display">Loading scramble...</div>
+        
+        <div id="twisty-player-container">
+            <twisty-player
+                id="cube-player"
+                alg=""
+                hint-facelets="none"
+                control-panel="none"
+                interaction-mode="none"
+                visualization="3D"
+                back-view="left"
+            ></twisty-player>
+        </div>
+
+        <div class="timer-display" id="timer-display">0.00</div>
+
+        <div class="controls">
+            <button id="start-btn" class="btn btn-start" style="display: none;">Start</button>
+            <button id="stop-btn" class="btn btn-stop" style="display: none;">Stop</button>
+            <button id="reset-btn" class="btn btn-reset">Reset</button>
         </div>
     </div>
 
-    <div id="info-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0 pointer-events-none">
-        <div class="panel max-w-lg w-full p-6 rounded-2xl text-center transform scale-95 transition-transform duration-300">
-            <h2 class="text-2xl font-bold text-cyan-300 mb-4">How to Use</h2>
-            <p class="mb-2">1. Press <strong class="text-cyan-300">spacebar</strong> or <strong class="text-cyan-300">tap the timer</strong> to start 15s inspection.</p>
-            <p class="mb-2">2. To start the solve, <strong class="text-cyan-300">PRESS and HOLD</strong> the spacebar or timer.</p>
-            <p class="mb-2">3. The timer will turn <strong class="text-green-400">GREEN</strong> after 0.55s. <strong class="text-cyan-300">RELEASE</strong> to start.</p>
-            <p class="mb-2">4. Press <strong class="text-cyan-300">ANY KEY</strong> or <strong class="text-cyan-300">TAP the timer</strong> to stop.</p>
-            <p class="mt-4">5. Press <strong class="text-cyan-300">ESC</strong> during inspection to cancel and retry the same scramble.</p>
-            <button id="close-modal" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 mt-2">Got it!</button>
-        </div>
-    </div>
+    <script type="module">
+        import { randomScrambleForEvent } from "https://cdn.cubing.net/v0/js/cubing/scramble";
+        
+        // Timer Variables
+        const timerDisplay = document.getElementById('timer-display');
+        const scrambleDisplay = document.getElementById('scramble-display');
+        const cubePlayer = document.getElementById('cube-player');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
 
-    <div id="contact-me-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 translate-y-full transition-all duration-300 z-20">
-        <div class="panel p-3">
-            <div class="flex items-center gap-4">
-                <a href="https://www.instagram.com/thehoodiecuber/" target="_blank" rel="noopener noreferrer" title="Instagram" class="flex items-center gap-2 text-gray-300 hover:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.703.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.942a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.445.01 10.173 0 8 0zm0 1.442c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.486.039.843.047 1.096.047 3.232s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.598.92c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485-.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.598-.92c-.11-.28-.24-.705-.276-1.485C1.442 10.39 1.434 10.147 1.434 8s.008-2.389.047-3.232c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.843-.039 1.096-.047 3.233-.047zM8 3.882a4.108 4.108 0 1 0 0 8.216 4.108 4.108 0 0 0 0-8.216zM8 10.479a2.479 2.479 0 1 1 0-4.958 2.479 2.479 0 0 1 0 4.958zM13.598 3.883a1.202 1.202 0 1 0 0 2.404 1.202 1.202 0 0 0 0-2.404z" />
-                    </svg>
-                </a>
-                <a href="mailto:sanjayragavendrak@gmail.com" title="Email" class="flex items-center gap-2 text-gray-300 hover:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.558z" />
-                    </svg>
-                </a>
-            </div>
-        </div>
-    </div>
+        let isRunning = false;
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isHoldingSpace = false;
+        let spaceHoldTimeout;
 
-    <script>
-        // --- LIVE ANIMATED BACKGROUND ---
-        let scene, camera, renderer, particles, velocities;
-        const mouse = new THREE.Vector2(10, 10);
-
-        function initBackground() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({
-                canvas: document.getElementById('bg-canvas'),
-                alpha: true
-            });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            const particleCount = 5000;
-            const positions = new Float32Array(particleCount * 3);
-            velocities = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-            const color = new THREE.Color();
-            const boxSize = 6;
-
-            for (let i = 0; i < particleCount; i++) {
-                const i3 = i * 3;
-                positions[i3] = (Math.random() - 0.5) * boxSize * 2;
-                positions[i3 + 1] = (Math.random() - 0.5) * boxSize * 2;
-                positions[i3 + 2] = (Math.random() - 0.5) * boxSize * 2;
-                velocities[i3] = 0;
-                velocities[i3 + 1] = 0;
-                color.setHSL(Math.random(), 0.8, 0.6);
-                colors[i3] = color.r;
-                colors[i3 + 1] = color.g;
-                colors[i3 + 2] = color.b;
-            }
-
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-            const material = new THREE.PointsMaterial({
-                size: 0.025,
-                vertexColors: true,
-                blending: THREE.AdditiveBlending,
-                transparent: true,
-                opacity: 0.9
-            });
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
-            camera.position.z = 5;
-
-            window.addEventListener('mousemove', onMouseMove, false);
-            animate();
-        }
-
-        function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const time = performance.now() * 0.0001;
-            const positions = particles.geometry.attributes.position.array;
-            const boundary = 6;
-            const mouseRadius = 1.5;
-            const mouseForce = 0.02;
-
-            const mouseVector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-            mouseVector.unproject(camera);
-            const direction = mouseVector.sub(camera.position).normalize();
-            const distance = -camera.position.z / direction.z;
-            const mousePos = camera.position.clone().add(direction.multiplyScalar(distance));
-
-            for (let i = 0; i < positions.length / 3; i++) {
-                const i3 = i * 3;
-                const x = positions[i3];
-                const y = positions[i3 + 1];
-
-                const waveFactor = 0.4;
-                const speedFactor = 0.00004;
-                velocities[i3] += Math.cos(y * waveFactor + time) * speedFactor;
-                velocities[i3 + 1] += Math.sin(x * waveFactor + time) * speedFactor;
-
-                const dx = x - mousePos.x;
-                const dy = y - mousePos.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < mouseRadius) {
-                    const force = (mouseRadius - dist) / mouseRadius;
-                    velocities[i3] += (dx / dist) * force * mouseForce;
-                    velocities[i3 + 1] += (dy / dist) * force * mouseForce;
-                }
-
-                velocities[i3] *= 0.97;
-                velocities[i3 + 1] *= 0.97;
-
-                positions[i3] += velocities[i3];
-                positions[i3 + 1] += velocities[i3 + 1];
-
-                if (positions[i3] > boundary || positions[i3] < -boundary) velocities[i3] *= -0.9;
-                if (positions[i3 + 1] > boundary || positions[i3 + 1] < -boundary) velocities[i3 + 1] *= -0.9;
-            }
-
-            particles.geometry.attributes.position.needsUpdate = true;
-            renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        }
-        window.addEventListener('resize', onWindowResize, false);
-
-
-        // --- CUBE STATE & TIMER LOGIC ---
-        const wcaEvents = {
-            '333': '3x3x3 Cube',
-            '222': '2x2x2 Cube',
-            '444': '4x4x4 Cube',
-            '555': '5x5x5 Cube',
-            '666': '6x6x6 Cube',
-            '777': '7x7x7 Cube',
-            '333bf': '3x3x3 Blindfolded',
-            '333fm': '3x3x3 Fewest Moves',
-            '333oh': '3x3x3 One-Handed',
-            '444bf': '4x4x4 Blindfolded',
-            '555bf': '5x5x5 Blindfolded'
-        };
-
-        const scrambleTools = {
-            randInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
-            randChoice: arr => arr[scrambleTools.randInt(0, arr.length - 1)],
-            scramble(moves, modifiers, length) {
-                let scramble = [];
-                let lastAxis = -1;
-                for (let i = 0; i < length; i++) {
-                    let move, axis;
-                    do {
-                        move = this.randChoice(moves);
-                        axis = Math.floor(moves.indexOf(move) / 2);
-                    } while (axis === lastAxis);
-                    lastAxis = axis;
-                    scramble.push(move + this.randChoice(modifiers));
-                }
-                return scramble.join(" ");
-            }
-        };
-
-        const scrambleMap = {
-            '222': () => scrambleTools.scramble(['U', 'R', 'F'], ["", "'", "2"], 9),
-            '333': () => scrambleTools.scramble(['U', 'D', 'L', 'R', 'F', 'B'], ["", "'", "2"], 20),
-            '444': () => scrambleTools.scramble(['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Dw', 'Lw', 'Rw', 'Fw', 'Bw'], ["", "'", "2"], 40),
-            '555': () => scrambleTools.scramble(['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Dw', 'Lw', 'Rw', 'Fw', 'Bw'], ["", "'", "2"], 60),
-            '666': () => scrambleTools.scramble(['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Dw', 'Lw', 'Rw', 'Fw', 'Bw', '3Uw', '3Dw', '3Lw', '3Rw', '3Fw', '3Bw'], ["", "'", "2"], 80),
-            '777': () => scrambleTools.scramble(['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Dw', 'Lw', 'Rw', 'Fw', 'Bw', '3Uw', '3Dw', '3Lw', '3Rw', '3Fw', '3Bw'], ["", "'", "2"], 100),
-        };
-        scrambleMap['333bf'] = scrambleMap['333'];
-        scrambleMap['333oh'] = scrambleMap['333'];
-        scrambleMap['333fm'] = scrambleMap['333'];
-        scrambleMap['444bf'] = scrambleMap['444'];
-        scrambleMap['555bf'] = scrambleMap['555'];
-
-        class CubeState {
-            constructor(n) {
-                this.n = n;
-                const colors = ['W', 'O', 'G', 'R', 'B', 'Y'];
-                this.faces = {};
-                ['U', 'L', 'F', 'R', 'B', 'D'].forEach((f, i) => {
-                    this.faces[f] = Array(n * n).fill(colors[i])
-                });
-            }
-            move(m) {
-                const match = m.match(/(\d*)?([RUFBLDxy])(w)?(['2])?/);
-                if (!match) return;
-                let [_, depthStr, baseMove, wide, modifier] = match;
-                let depth = 1;
-                if (wide) depth = depthStr ? parseInt(depthStr) : 2;
-                else if (depthStr) depth = parseInt(depthStr);
-                const turns = modifier === "'" ? -1 : modifier === '2' ? 2 : 1;
-                const axis = {
-                    R: 'x',
-                    L: 'x',
-                    U: 'y',
-                    D: 'y',
-                    F: 'z',
-                    B: 'z'
-                } [baseMove];
-                let slices = [],
-                    dir = turns;
-                if (['L', 'D', 'B'].includes(baseMove)) dir *= -1;
-                if (['R', 'U', 'F'].includes(baseMove)) slices = Array.from({
-                    length: depth
-                }, (_, i) => this.n - 1 - i).reverse();
-                else if (['L', 'D', 'B'].includes(baseMove)) slices = Array.from({
-                    length: depth
-                }, (_, i) => i);
-                this._turn(axis, slices, dir);
-            }
-            _turn(axis, slices, direction) {
-                const quarterTurns = direction === 2 ? 2 : direction === -1 ? 3 : 1;
-                slices.forEach(sliceIndex => {
-                    if (axis === 'x') {
-                        if (sliceIndex === 0) this._rF('L', 3 * quarterTurns);
-                        if (sliceIndex === this.n - 1) this._rF('R', quarterTurns);
-                    } else if (axis === 'y') {
-                        if (sliceIndex === 0) this._rF('U', quarterTurns);
-                        if (sliceIndex === this.n - 1) this._rF('D', 3 * quarterTurns);
-                    } else if (axis === 'z') {
-                        if (sliceIndex === 0) this._rF('F', quarterTurns);
-                        if (sliceIndex === this.n - 1) this._rF('B', 3 * quarterTurns);
-                    }
-                });
-                for (let i = 0; i < quarterTurns; i++) {
-                    slices.forEach(sliceIndex => {
-                        const cycle = {
-                            x: ['U', 'B', 'D', 'F'],
-                            y: ['F', 'R', 'B', 'L'],
-                            z: ['U', 'L', 'D', 'R']
-                        } [axis];
-                        const temp = [];
-                        for (let j = 0; j < this.n; j++) temp.push(this.gS(cycle[0], axis, sliceIndex, j));
-                        for (let f = 0; f < 3; f++) {
-                            for (let j = 0; j < this.n; j++) this.sS(cycle[f], axis, sliceIndex, j, this.gS(cycle[f + 1], axis, sliceIndex, j));
-                        }
-                        for (let j = 0; j < this.n; j++) this.sS(cycle[3], axis, sliceIndex, j, temp[j]);
-                    })
-                }
-            }
-            _rF(face, turns = 1) {
-                for (let i = 0; i < turns; i++) {
-                    const temp = [...this.faces[face]];
-                    for (let j = 0; j < this.n * this.n; j++) {
-                        const row = j % this.n,
-                            col = Math.floor(j / this.n);
-                        this.faces[face][j] = temp[this.n * (this.n - 1 - row) + col];
-                    }
-                }
-            }
-            gS(face, axis, slice, i) {
-                const n = this.n;
-                const map = {
-                    x: {
-                        U: this.faces.U[i * n + slice],
-                        F: this.faces.F[i * n + slice],
-                        D: this.faces.D[i * n + slice],
-                        B: this.faces.B[(n - 1 - i) * n + (n - 1 - slice)]
-                    },
-                    y: {
-                        F: this.faces.F[slice * n + i],
-                        L: this.faces.L[slice * n + i],
-                        B: this.faces.B[slice * n + (n - 1 - i)],
-                        R: this.faces.R[slice * n + i]
-                    },
-                    z: {
-                        U: this.faces.U[(n - 1 - slice) * n + i],
-                        L: this.faces.L[i * n + (n - 1 - slice)],
-                        D: this.faces.D[slice * n + (n - 1 - i)],
-                        R: this.faces.R[(n - 1 - i) * n + slice]
-                    }
-                };
-                return map[axis][face];
-            }
-            sS(face, axis, slice, i, val) {
-                const n = this.n;
-                const map = {
-                    x: {
-                        U: () => this.faces.U[i * n + slice] = val,
-                        F: () => this.faces.F[i * n + slice] = val,
-                        D: () => this.faces.D[i * n + slice] = val,
-                        B: () => this.faces.B[(n - 1 - i) * n + (n - 1 - slice)] = val
-                    },
-                    y: {
-                        F: () => this.faces.F[slice * n + i] = val,
-                        L: () => this.faces.L[slice * n + i] = val,
-                        B: () => this.faces.B[slice * n + (n - 1 - i)] = val,
-                        R: () => this.faces.R[slice * n + i] = val
-                    },
-                    z: {
-                        U: () => this.faces.U[(n - 1 - slice) * n + i] = val,
-                        L: () => this.faces.L[i * n + (n - 1 - slice)] = val,
-                        D: () => this.faces.D[slice * n + (n - 1 - i)] = val,
-                        R: () => this.faces.R[(n - 1 - i) * n + slice] = val
-                    }
-                };
-                map[axis][face]();
+        // Scramble Functions
+        async function generateScramble() {
+            scrambleDisplay.textContent = "Generating...";
+            cubePlayer.alg = ""; // Clear visualizer
+            try {
+                const scramble = await randomScrambleForEvent("333");
+                scrambleDisplay.textContent = scramble.toString();
+                cubePlayer.alg = scramble.toString();
+            } catch (error) {
+                console.error("Failed to generate scramble:", error);
+                scrambleDisplay.textContent = "Error generating scramble.";
             }
         }
 
-        const puzzleVisualizer = {
-            renderNxN(size, scrambleStr, container) {
-                let faces;
-                try {
-                    const cube = new CubeState(size);
-                    scrambleStr.split(' ').filter(m => m).forEach(m => cube.move(m));
-                    faces = cube.faces;
-                } catch (e) {
-                    console.error("Scramble Error:", e);
-                    const cube = new CubeState(size);
-                    faces = cube.faces;
-                }
-                const stickerSize = Math.max(12, 32 / size);
-                const faceWidth = stickerSize * size;
-                container.innerHTML = `<div class="nxn-viz" style="width:${faceWidth * 4 + 10}px;height:${faceWidth * 3 + 8}px;margin:auto;grid-template-columns:repeat(4, ${faceWidth + 2}px);grid-template-rows:repeat(3, ${faceWidth + 2}px);"><div style="grid-area:1/2" id="face-U" class="face"></div><div style="grid-area:2/1" id="face-L" class="face"></div><div style="grid-area:2/2" id="face-F" class="face"></div><div style="grid-area:2/3" id="face-R" class="face"></div><div style="grid-area:2/4" id="face-B" class="face"></div><div style="grid-area:3/2" id="face-D" class="face"></div></div>`;
-                for (const key in faces) {
-                    const faceEl = container.querySelector(`#face-${key}`);
-                    faceEl.style.gridTemplateColumns = `repeat(${size},1fr)`;
-                    faces[key].forEach(color => {
-                        faceEl.innerHTML += `<div class="sticker color-${color}" style="padding-bottom:100%"></div>`
-                    });
-                }
-            }
-        };
-
-        const timerElement = document.getElementById("timer");
-        const timerContainer = document.getElementById("timer-container");
-        const scrambleElement = document.getElementById("scramble");
-        const puzzleVizContainer = document.getElementById("puzzle-visualization");
-        const eventSelector = document.getElementById("event-selector");
-        const historyBody = document.getElementById("history-body");
-        const ao5Element = document.getElementById("ao5");
-        const ao12Element = document.getElementById("ao12");
-        const bestElement = document.getElementById("best");
-        const worstElement = document.getElementById("worst");
-        const infoModal = document.getElementById("info-modal");
-        const closeModalButton = document.getElementById("close-modal");
-        const exportCsvBtn = document.getElementById('export-csv-btn');
-        const exportTxtBtn = document.getElementById('export-txt-btn');
-        const importBtn = document.getElementById('import-btn');
-        const importFileInput = document.getElementById('import-file-input');
-
-        let timer, startTime = 0,
-            timerState = 'idle',
-            times = [],
-            inspectionTimer, holdTimeout, inspectionPenalty = 0,
-            audioCtx;
-
-        function playBeep(frequency = 440, duration = 150) {
-            if (!audioCtx) {
-                try {
-                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    return;
-                }
-            }
-            if (!audioCtx) return;
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration / 1000);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + duration / 1000);
+        // Timer Functions
+        function formatTime(milliseconds) {
+            let seconds = Math.floor(milliseconds / 1000);
+            let minutes = Math.floor(seconds / 60);
+            seconds = seconds % 60;
+            let centiseconds = Math.floor((milliseconds % 1000) / 10);
+            
+            return `${minutes > 0 ? minutes + ':' : ''}${seconds.toString().padStart(minutes > 0 ? 2 : 1, '0')}.${centiseconds.toString().padStart(2, '0')}`;
         }
 
-        function speak(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 1.3;
-                utterance.pitch = 1.2;
-                window.speechSynthesis.speak(utterance);
-            } else {
-                playBeep(text.startsWith('eight') ? 660 : 990, 150);
-            }
-        }
-
-        function populateEventSelector() {
-            eventSelector.innerHTML = '';
-            for (const [id, name] of Object.entries(wcaEvents)) {
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = name;
-                eventSelector.appendChild(option);
-            }
-            const lastEvent = localStorage.getItem('wcaTimerEvent') || '333';
-            eventSelector.value = wcaEvents[lastEvent] ? lastEvent : '333';
-        }
-
-        function generateScramble() {
-            const eventId = eventSelector.value;
-            const scrambleFn = scrambleMap[eventId] || scrambleMap['333'];
-            const newScramble = scrambleFn();
-            puzzleVizContainer.classList.remove('visible-viz');
-            setTimeout(() => {
-                scrambleElement.innerHTML = newScramble.replace(/\n/g, '<br>');
-                const visualizableEvents = ['222', '333', '444', '555', '666', '777', '333bf', '444bf', '555bf'];
-                if (visualizableEvents.includes(eventId)) {
-                    const size = parseInt(eventId[0]);
-                    puzzleVisualizer.renderNxN(size, newScramble, puzzleVizContainer);
-                    puzzleVizContainer.classList.add('visible-viz');
-                }
-            }, 100);
-        }
-
-        function formatTime(ms, status = 'ok') {
-            if (status === 'dnf') return 'DNF';
-            const totalMs = ms + (status === '+2' ? 2000 : 0);
-            const minutes = Math.floor(totalMs / 60000);
-            const seconds = Math.floor((totalMs % 60000) / 1000);
-            const centiseconds = Math.floor((totalMs % 1000) / 10);
-            let formatted = '';
-            formatted += minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}.` : `${seconds}.`;
-            formatted += centiseconds.toString().padStart(2, '0');
-            return formatted + (status === '+2' ? "+" : "");
-        }
-
-        function updateTimerDisplay() {
-            const elapsed = Date.now() - startTime;
-            const totalSeconds = Math.floor(elapsed / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            timerElement.textContent = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : seconds.toString();
-        }
-
-        function cancelSolveAttempt() {
-            clearTimeout(holdTimeout);
-            clearInterval(inspectionTimer);
-            inspectionTimer = null;
-            inspectionPenalty = 0;
-            timerState = 'stopped';
-            timerElement.textContent = formatTime(0);
-            timerElement.className = 'timer-display font-black tracking-tighter';
-            document.body.classList.remove('focus-mode');
-        }
-
-        function startInspection() {
-            timerState = 'inspecting';
-            inspectionPenalty = 0;
-            let secondsPassed = 0;
-            timerElement.textContent = 15;
-            timerElement.className = 'timer-display font-black tracking-tighter timer-inspecting';
-            inspectionTimer = setInterval(() => {
-                secondsPassed++;
-                if (!inspectionTimer) return;
-                if (secondsPassed <= 15) {
-                    timerElement.textContent = 15 - secondsPassed;
-                    timerElement.classList.add('inspection-tick');
-                    setTimeout(() => timerElement.classList.remove('inspection-tick'), 500);
-                }
-                if (secondsPassed === 8 || secondsPassed === 12) speak(secondsPassed === 8 ? 'eight seconds' : 'twelve seconds');
-                if (secondsPassed === 15) {
-                    inspectionPenalty = 2000;
-                    timerElement.classList.remove('timer-inspecting');
-                    timerElement.classList.add('timer-penalty');
-                } else if (secondsPassed === 17) {
-                    inspectionPenalty = 'dnf';
-                    timerElement.classList.remove('timer-inspecting');
-                    timerElement.classList.add('timer-running');
-                    stopTimer(true);
-                }
-            }, 1000);
+        function updateTimer() {
+            elapsedTime = Date.now() - startTime;
+            timerDisplay.textContent = formatTime(elapsedTime);
         }
 
         function startTimer() {
-            if (timerState === 'dnf') return;
-            document.body.classList.add('focus-mode');
-            startTime = Date.now();
-            timerState = 'timing';
-            timerElement.className = 'timer-display font-black tracking-tighter timer-running';
-            timer = setInterval(updateTimerDisplay, 100);
+            if (isRunning) return;
+            isRunning = true;
+            startTime = Date.now() - elapsedTime;
+            timerInterval = setInterval(updateTimer, 10);
+            timerDisplay.style.color = '#fff';
+            generateScramble(); // Generate a new scramble for the next solve
         }
 
-        function stopTimer(isDNF = false) {
-            clearInterval(timer);
-            clearInterval(inspectionTimer);
-            inspectionTimer = null;
-            const finalTime = isDNF ? Infinity : Date.now() - startTime;
-            let status = 'ok';
-            if (isDNF || inspectionPenalty === 'dnf') status = 'dnf';
-            else if (inspectionPenalty === 2000) status = '+2';
-            timerState = 'stopped';
-            timerElement.className = 'timer-display font-black tracking-tighter';
-            timerElement.textContent = formatTime(finalTime, status);
-            const currentEvent = eventSelector.value;
-            const eventTimes = times.filter(t => t.event === currentEvent);
-            addTimeToHistory({
-                baseTime: finalTime,
-                status: status,
-                event: currentEvent
-            });
-            generateScramble();
-            const numericTime = (status === 'dnf') ? Infinity : finalTime + (status === '+2' ? 2000 : 0);
-            if (numericTime !== Infinity) {
-                const validTimes = eventTimes.filter(t => t.status !== 'dnf');
-                const bestTime = validTimes.length > 0 ? Math.min(...validTimes.map(t => t.baseTime + (t.status === '+2' ? 2000 : 0))) : Infinity;
-                if (numericTime < bestTime) {
-                    timerElement.classList.add('new-best-animation');
-                    setTimeout(() => timerElement.classList.remove('new-best-animation'), 2500);
-                }
-            }
-            if (eventTimes.length > 0) {
-                const worstTime = Math.max(...eventTimes.map(t => t.status === 'dnf' ? Infinity : t.baseTime + (t.status === '+2' ? 2000 : 0)));
-                if (numericTime > worstTime) {
-                    timerElement.classList.add('new-worst-animation');
-                    setTimeout(() => timerElement.classList.remove('new-worst-animation'), 1200);
-                }
-            }
-            document.body.classList.remove('focus-mode');
+        function stopTimer() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerInterval);
         }
 
-        function handleKeyDown(e) {
-            if (e.code === 'Escape' && ['inspecting', 'arming', 'ready'].includes(timerState)) {
+        function resetTimer() {
+            stopTimer();
+            elapsedTime = 0;
+            timerDisplay.textContent = "0.00";
+            timerDisplay.style.color = '#fff';
+            generateScramble(); // Generate a scramble on reset
+        }
+
+        // Event Listeners for Buttons
+        startBtn.addEventListener('click', startTimer);
+        stopBtn.addEventListener('click', stopTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Event Listeners for Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !isHoldingSpace) {
                 e.preventDefault();
-                cancelSolveAttempt();
-                return;
-            }
-            if (timerState === 'timing') {
-                e.preventDefault();
-                stopTimer();
-                return;
-            }
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (e.repeat) return;
-                if (timerState === 'idle' || timerState === 'stopped') {
-                    startInspection();
-                } else if (timerState === 'inspecting') {
-                    timerState = 'arming';
-                    timerElement.className = 'timer-display font-black tracking-tighter timer-running';
-                    holdTimeout = setTimeout(() => {
-                        timerState = 'ready';
-                        timerElement.className = 'timer-display font-black tracking-tighter timer-ready';
-                    }, 550);
+                isHoldingSpace = true;
+                if (!isRunning) {
+                    timerDisplay.style.color = '#28a745'; // Green pre-start color
+                    spaceHoldTimeout = setTimeout(() => {
+                         timerDisplay.style.color = '#ffc107'; // Yellow ready color
+                    }, 500); // 500ms for pre-start
                 }
             }
-        }
-
-        function handleKeyUp(e) {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                clearTimeout(holdTimeout);
-                if (timerState === 'ready') {
-                    clearInterval(inspectionTimer);
-                    inspectionTimer = null;
-                    startTimer();
-                } else if (timerState === 'arming') {
-                    timerState = 'inspecting';
-                    timerElement.className = 'timer-display font-black tracking-tighter';
-                    if (inspectionPenalty > 0) timerElement.classList.add('timer-penalty');
-                    else timerElement.classList.add('timer-inspecting');
-                }
-            }
-        }
-
-        // === TOUCH CONTROLS FOR MOBILE ===
-        function handleTouchStart(e) {
-            // Only respond to a single touch, not multi-touch gestures
-            if (e.touches.length > 1) {
-                return;
-            }
-            // Prevent default touch behavior (like scrolling or zooming) as we're controlling the timer
-            e.preventDefault();
-
-            if (timerState === 'timing') {
-                stopTimer();
-                return;
-            }
-
-            // This block mimics the spacebar keydown logic
-            if (timerState === 'idle' || timerState === 'stopped') {
-                startInspection();
-            } else if (timerState === 'inspecting') {
-                timerState = 'arming';
-                timerElement.className = 'timer-display font-black tracking-tighter timer-running';
-                holdTimeout = setTimeout(() => {
-                    timerState = 'ready';
-                    timerElement.className = 'timer-display font-black tracking-tighter timer-ready';
-                }, 550);
-            }
-        }
-
-        function handleTouchEnd(e) {
-            // Prevent default touch behavior
-            e.preventDefault();
-
-            // This block mimics the spacebar keyup logic
-            clearTimeout(holdTimeout);
-            if (timerState === 'ready') {
-                clearInterval(inspectionTimer);
-                inspectionTimer = null;
-                startTimer();
-            } else if (timerState === 'arming') {
-                timerState = 'inspecting';
-                timerElement.className = 'timer-display font-black tracking-tighter';
-                if (inspectionPenalty > 0) timerElement.classList.add('timer-penalty');
-                else timerElement.classList.add('timer-inspecting');
-            }
-        }
-        // === END TOUCH CONTROLS ===
-
-        function addTimeToHistory(time) {
-            times.push(time);
-            saveTimes();
-            updateHistoryTable();
-            updateStats();
-        }
-
-        function updateHistoryTable() {
-            historyBody.innerHTML = "";
-            const currentEvent = eventSelector.value;
-            const eventTimes = times.filter(t => t.event === currentEvent);
-            eventTimes.slice().reverse().forEach((time, index) => {
-                const row = document.createElement("tr");
-                const originalIndex = times.findIndex(item => item === time);
-                const displayTime = formatTime(time.baseTime, time.status);
-                row.innerHTML = `<td class="p-2">${eventTimes.length - index}</td><td class="p-2 ${time.status === 'dnf' ? 'status-dnf' : time.status === '+2' ? 'status-plus2' : ''}">${displayTime}</td><td class="p-2 history-actions"><div class="flex justify-center items-center gap-2 sm:gap-3"><button title="Toggle+2" data-action="plus2" data-index="${originalIndex}" class="font-bold text-yellow-400 w-9 sm:w-10 text-xs py-1 rounded bg-gray-700/50 hover:bg-gray-700">+2</button><button title="Toggle DNF" data-action="dnf" data-index="${originalIndex}" class="font-bold text-red-400 w-9 sm:w-10 text-xs py-1 rounded bg-gray-700/50 hover:bg-gray-700">DNF</button><button title="Delete" data-action="delete" data-index="${originalIndex}" class="font-bold text-gray-400 text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">Del</button></div></td>`;
-                historyBody.appendChild(row);
-            });
-        }
-
-        function handleHistoryAction(e) {
-            const button = e.target.closest('button');
-            if (!button) return;
-            const action = button.dataset.action;
-            const index = parseInt(button.dataset.index);
-            if (isNaN(index) || !times[index]) return;
-            if (action === 'delete') {
-                const startIndex = index;
-                const startEvent = times[startIndex].event;
-                const numToDeleteStr = prompt("How many?", "1");
-                if (numToDeleteStr === null) return;
-                const numToDelete = parseInt(numToDeleteStr, 10);
-                if (isNaN(numToDelete) || numToDelete <= 0) return;
-                const indicesToRemove = [];
-                let count = 0;
-                for (let i = startIndex; i < times.length && count < numToDelete; i++) {
-                    if (times[i].event === startEvent) {
-                        indicesToRemove.push(i);
-                        count++;
-                    }
-                }
-                for (let i = indicesToRemove.length - 1; i >= 0; i--) {
-                    times.splice(indicesToRemove[i], 1);
-                }
-                saveTimes();
-                updateHistoryTable();
-                updateStats();
-                timerState = 'stopped';
-                timerElement.textContent = formatTime(0);
-                timerElement.className = 'timer-display font-black tracking-tighter';
-            } else if (action === 'plus2') {
-                const time = times[index];
-                if (time.status !== 'dnf') time.status = time.status === '+2' ? 'ok' : '+2';
-            } else if (action === 'dnf') {
-                times[index].status = times[index].status === 'dnf' ? 'ok' : 'dnf';
-            }
-            saveTimes();
-            updateHistoryTable();
-            updateStats();
-        }
-
-        function calculateAverage(count) {
-            const currentEvent = eventSelector.value;
-            const eventTimes = times.filter(t => t.event === currentEvent);
-            if (eventTimes.length < count) return null;
-            const latest = eventTimes.slice(-count);
-            if (latest.some(t => t.status === 'dnf')) return 'DNF';
-            const sorted = latest.map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)).sort((a, b) => a - b);
-            const trimmed = sorted.slice(1, -1);
-            const sum = trimmed.reduce((a, b) => a + b, 0);
-            return sum / (count - 2);
-        }
-
-        function updateStats() {
-            const currentEvent = eventSelector.value;
-            const eventTimes = times.filter(t => t.event === currentEvent);
-            if (eventTimes.length === 0) {
-                ['ao5', 'ao12', 'best', 'worst'].forEach(id => document.getElementById(id).textContent = 'N/A');
-                return;
-            }
-            const avg5 = calculateAverage(5);
-            const avg12 = calculateAverage(12);
-            ao5Element.textContent = avg5 === 'DNF' ? 'DNF' : avg5 ? formatTime(avg5) : 'N/A';
-            ao12Element.textContent = avg12 === 'DNF' ? 'DNF' : avg12 ? formatTime(avg12) : 'N/A';
-            const validTimes = eventTimes.filter(t => t.status !== 'dnf');
-            if (validTimes.length > 0) {
-                const best = validTimes.reduce((prev, curr) => (prev.baseTime + (prev.status === '+2' ? 2000 : 0)) < (curr.baseTime + (curr.status === '+2' ? 2000 : 0)) ? prev : curr);
-                bestElement.textContent = formatTime(best.baseTime, best.status);
-            } else {
-                bestElement.textContent = 'N/A';
-            }
-            if (eventTimes.some(t => t.status === 'dnf')) {
-                worstElement.textContent = 'DNF';
-            } else if (validTimes.length > 0) {
-                const worst = validTimes.reduce((prev, curr) => (prev.baseTime + (prev.status === '+2' ? 2000 : 0)) > (curr.baseTime + (curr.status === '+2' ? 2000 : 0)) ? prev : curr);
-                worstElement.textContent = formatTime(worst.baseTime, worst.status);
-            }
-        }
-
-        function showModal() {
-            infoModal.classList.remove('opacity-0', 'pointer-events-none');
-            infoModal.querySelector('div').classList.remove('scale-95');
-        }
-
-        function hideModal() {
-            infoModal.classList.add('opacity-0', 'pointer-events-none');
-            infoModal.querySelector('div').classList.add('scale-95');
-            localStorage.setItem('cubeTimerVisited', 'true');
-        }
-
-        function saveTimes() {
-            localStorage.setItem('wcaTimerHistory', JSON.stringify(times));
-        }
-
-        function loadTimes() {
-            times = JSON.parse(localStorage.getItem('wcaTimerHistory')) || [];
-        }
-
-        function exportTimesToCSV() {
-            if (times.length === 0) return;
-            const header = ["event", "baseTime", "status"];
-            const rows = times.map(t => [t.event, t.baseTime, t.status].join(','));
-            const csvContent = [header.join(','), ...rows].join('\n');
-            const blob = new Blob([csvContent], {
-                type: 'text/csv;charset=utf-8;'
-            });
-            const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                const date = new Date().toISOString().slice(0, 10);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hoodieboy-timer_${date}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-
-        function exportTimesToCsTimerFormat() {
-            if (times.length === 0) return;
-            const data = {
-                properties: {
-                    sessionData: `{"1":{"name":"Session 1"}}`
-                }
-            };
-            const sessions = {};
-            times.forEach(t => {
-                if (!sessions[t.event]) sessions[t.event] = [];
-                sessions[t.event].push(t);
-            });
-            let i = 1;
-            for (const event in sessions) {
-                const key = `session${i}`;
-                const sessionTimes = sessions[event].map(t => {
-                    let penalty = 0;
-                    if (t.status === '+2') penalty = 2000;
-                    if (t.status === 'dnf') penalty = -1;
-                    const time = t.status === 'dnf' ? 0 : t.baseTime;
-                    return [
-                        [penalty, time], "", "", Math.floor(Date.now() / 1000)
-                    ];
-                });
-                data[key] = sessionTimes;
-                i++;
-            }
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], {
-                type: 'text/plain;charset=utf-8;'
-            });
-            const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                const date = new Date().toISOString().slice(0, 10);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `hoodieboy-timer_${date}.txt`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-
-        function importFromFile(file) {
-            if (file.name.endsWith('.txt')) importTimesFromCsTimer(file);
-            else if (file.name.endsWith('.csv')) importTimesFromCSV(file);
-            else alert("Unsupported file type.");
-        }
-
-        function importTimesFromCSV(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                const lines = content.split(/[\r\n]+/).filter(line => line);
-                if (lines.length < 1) return;
-                const header = lines[0].trim().split(',');
-                if (header[0] !== 'event' || header[1] !== 'baseTime' || header[2] !== 'status') return;
-                const importedTimes = [];
-                let errors = 0;
-                const validStatuses = ['ok', '+2', 'dnf'];
-                for (let i = 1; i < lines.length; i++) {
-                    const values = lines[i].trim().split(',');
-                    const event = values[0];
-                    const baseTime = values[1] === 'Infinity' ? Infinity : parseFloat(values[1]);
-                    const status = values[2];
-                    if (values.length !== 3 || !wcaEvents[event] || isNaN(baseTime) || !validStatuses.includes(status)) {
-                        errors++;
-                        continue;
-                    }
-                    importedTimes.push({
-                        event: event,
-                        baseTime: baseTime,
-                        status: status
-                    });
-                }
-                if (importedTimes.length === 0) return;
-                if (confirm(`${importedTimes.length} solves found` + (errors > 0 ? ` (${errors} invalid ignored)` : '') + ".\nAdd to history?")) {
-                    times = [...times, ...importedTimes];
-                    saveTimes();
-                    updateHistoryTable();
-                    updateStats();
-                    alert(`Imported ${importedTimes.length} solves.`);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function importTimesFromCsTimer(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                let data;
-                try {
-                    data = JSON.parse(e.target.result);
-                } catch (err) {
-                    return;
-                }
-                const allSolves = [];
-                for (const key in data) {
-                    if (key.startsWith("session")) {
-                        data[key].forEach(solve => {
-                            if (Array.isArray(solve) && Array.isArray(solve[0])) {
-                                const [
-                                    [penalty, time]
-                                ] = solve;
-                                let status = 'ok',
-                                    baseTime = time;
-                                if (penalty === -1) {
-                                    status = 'dnf';
-                                    baseTime = Infinity;
-                                } else if (penalty === 2000) {
-                                    status = '+2';
-                                }
-                                allSolves.push({
-                                    baseTime: baseTime,
-                                    status: status,
-                                    event: ''
-                                });
-                            }
-                        });
-                    }
-                }
-                if (allSolves.length === 0) return;
-                const eventOptions = Object.keys(wcaEvents).join(', ');
-                const targetEvent = prompt(`Found ${allSolves.length} solves. Import to which event?\n(${eventOptions})`, eventSelector.value);
-                if (!targetEvent || !wcaEvents[targetEvent]) return;
-                allSolves.forEach(solve => solve.event = targetEvent);
-                if (confirm(`Import ${allSolves.length} solves to "${wcaEvents[targetEvent]}"?`)) {
-                    times = [...times, ...allSolves];
-                    saveTimes();
-                    updateHistoryTable();
-                    updateStats();
-                    alert(`Imported ${allSolves.length} solves.`);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-        timerContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
-        timerContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
-        closeModalButton.addEventListener('click', hideModal);
-        historyBody.addEventListener('click', handleHistoryAction);
-        exportCsvBtn.addEventListener('click', exportTimesToCSV);
-        exportTxtBtn.addEventListener('click', exportTimesToCsTimerFormat);
-        importBtn.addEventListener('click', () => importFileInput.click());
-        importFileInput.addEventListener('change', e => {
-            const file = e.target.files[0];
-            if (file) importFromFile(file);
-            e.target.value = null
-        });
-        eventSelector.addEventListener('change', e => {
-            localStorage.setItem('wcaTimerEvent', e.target.value);
-            cancelSolveAttempt();
-            updateHistoryTable();
-            updateStats();
-            generateScramble();
         });
 
-
-        window.onload = () => {
-            initBackground();
-            loadTimes();
-            populateEventSelector();
-            generateScramble();
-            updateHistoryTable();
-            updateStats();
-            if (!localStorage.getItem('cubeTimerVisited')) {
-                setTimeout(showModal, 1000);
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                isHoldingSpace = false;
+                clearTimeout(spaceHoldTimeout);
+                if (isRunning) {
+                    stopTimer();
+                } else {
+                    if (timerDisplay.style.color === 'rgb(255, 193, 7)') { // Check if timer is yellow/ready
+                        startTimer();
+                    } else {
+                        timerDisplay.style.color = '#fff'; // Reset color if not started
+                    }
+                }
             }
-        };
+        });
+        
+        // Initial setup
+        window.onload = resetTimer;
     </script>
 </body>
-
 </html>
