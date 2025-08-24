@@ -23,7 +23,7 @@
             min-height: 100vh;
             margin: 0;
             user-select: none;
-            overflow: hidden; /* Hide scrollbars */
+            overflow-y: auto; /* Enable vertical scrolling */
         }
 
         .main-container {
@@ -34,13 +34,13 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             max-width: 90%;
             width: 700px;
-            height: auto;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
             position: relative;
             z-index: 1;
+            margin: 20px 0;
         }
 
         .timer-header {
@@ -68,8 +68,8 @@
             background-color: #444;
             border-radius: 5px;
             letter-spacing: 2px;
-            white-space: pre-wrap; /* Allows words to wrap */
-            word-wrap: break-word; /* Breaks long words */
+            white-space: pre-wrap;
+            word-wrap: break-word;
             max-width: 100%;
         }
 
@@ -88,6 +88,8 @@
             display: flex;
             gap: 15px;
             margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn {
@@ -143,7 +145,7 @@
             height: 100%;
             border-radius: 10px;
         }
-
+        
         #twisty-player-container.loading::before {
             content: "Loading Cube...";
             position: absolute;
@@ -152,6 +154,7 @@
             transform: translate(-50%, -50%);
             color: #999;
             font-size: 1.2rem;
+            z-index: 10;
         }
     </style>
 </head>
@@ -175,6 +178,12 @@
             ></twisty-player>
         </div>
 
+        <div class="controls">
+            <button id="show2DBtn" class="btn">Show 2D</button>
+            <button id="show3DBtn" class="btn">Show 3D</button>
+            <button id="generateScrambleBtn" class="btn btn-reset">New Scramble</button>
+        </div>
+
         <div class="timer-display" id="timer-display">0.00</div>
 
         <div class="controls">
@@ -194,6 +203,9 @@
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const resetBtn = document.getElementById('reset-btn');
+        const show2DBtn = document.getElementById('show2DBtn');
+        const show3DBtn = document.getElementById('show3DBtn');
+        const generateScrambleBtn = document.getElementById('generateScrambleBtn');
 
         let isRunning = false;
         let startTime;
@@ -201,18 +213,28 @@
         let timerInterval;
         let isHoldingSpace = false;
         let spaceHoldTimeout;
+        let currentScramble = "";
 
-        // Scramble Functions
+        // Scramble and Visualization Functions
         async function generateScramble() {
             scrambleDisplay.textContent = "Generating...";
             cubePlayer.alg = ""; // Clear visualizer
             try {
                 const scramble = await randomScrambleForEvent("333");
-                scrambleDisplay.textContent = scramble.toString();
-                cubePlayer.alg = scramble.toString();
+                currentScramble = scramble.toString();
+                scrambleDisplay.textContent = currentScramble;
+                cubePlayer.alg = currentScramble;
             } catch (error) {
                 console.error("Failed to generate scramble:", error);
                 scrambleDisplay.textContent = "Error generating scramble.";
+            }
+        }
+
+        function updateVisualization(mode) {
+            cubePlayer.visualization = mode;
+            // Re-apply the current scramble to ensure the player updates
+            if (currentScramble) {
+                cubePlayer.alg = currentScramble;
             }
         }
 
@@ -258,6 +280,9 @@
         startBtn.addEventListener('click', startTimer);
         stopBtn.addEventListener('click', stopTimer);
         resetBtn.addEventListener('click', resetTimer);
+        show2DBtn.addEventListener('click', () => updateVisualization("2D"));
+        show3DBtn.addEventListener('click', () => updateVisualization("3D"));
+        generateScrambleBtn.addEventListener('click', generateScramble);
 
         // Event Listeners for Keyboard
         document.addEventListener('keydown', (e) => {
