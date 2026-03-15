@@ -131,24 +131,54 @@
         }
         #settings-btn:hover { border-color: rgba(103,232,249,.6); box-shadow: 0 0 10px rgba(103,232,249,.2); }
 
+        /* Manual entry modal */
+        #manual-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.75);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            z-index: 210;
+            opacity: 0; pointer-events: none;
+            transition: opacity .3s;
+        }
+        #manual-modal.open { opacity: 1; pointer-events: all; }
+        #manual-modal .modal-box {
+            background: rgba(15,20,35,.95);
+            border: 1px solid rgba(103,232,249,.25);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            width: 100%; max-width: 360px;
+            box-shadow: 0 0 40px rgba(103,232,249,.15);
+            transform: scale(.94);
+            transition: transform .3s;
+        }
+        #manual-modal.open .modal-box { transform: scale(1); }
+
+        #manual-input {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(103,232,249,.5);
+            color: #67E8F9;
+            text-shadow: 0 0 10px #67E8F9;
+            outline: none;
+            letter-spacing: 0.05em;
+            padding: .25rem 0;
+        }
+        #manual-preview {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            text-align: center;
+            color: rgba(255,255,255,.5);
+            margin-top: .5rem;
+            min-height: 1.5rem;
+        }
         #manual-input::-webkit-inner-spin-button,
         #manual-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-        /* Manual mode — timer panel switches appearance */
-        body.manual-mode #timer-container {
-            border-color: rgba(103,232,249,.3);
-            box-shadow: 0 0 30px rgba(103,232,249,.08), inset 0 0 60px rgba(103,232,249,.04);
-        }
-        #inline-manual-input:focus {
-            border-bottom-color: rgba(103,232,249,.8) !important;
-            text-shadow: 0 0 30px rgba(103,232,249,.9) !important;
-        }
-        /* flash green when time is saved */
-        @keyframes save-flash {
-            0%  { border-bottom-color: rgba(52,211,153,.9); text-shadow: 0 0 30px rgba(52,211,153,.9); }
-            100%{ border-bottom-color: rgba(103,232,249,.35); text-shadow: 0 0 20px rgba(103,232,249,.6); }
-        }
-        .save-flash { animation: save-flash .4s ease-out; }
 
         .settings-row {
             display: flex; align-items: center; justify-content: space-between;
@@ -158,41 +188,10 @@
         .settings-row:last-child { border-bottom: none; }
         .settings-label { font-size: .9rem; color: #d1d5db; }
         .settings-desc  { font-size: .72rem; color: rgba(255,255,255,.35); margin-top:.15rem; }
-
-        /* BT status pill */
-        #bt-status-bar {
-            position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
-            z-index: 150;
-            display: none;
-            align-items: center; gap: .5rem;
-            padding: .35rem .85rem;
-            background: rgba(15,20,35,.9);
-            border-radius: 2rem;
-            font-size: .75rem;
-            border: 1px solid rgba(255,255,255,.15);
-            white-space: nowrap;
-        }
-        #bt-status-bar.show { display: flex; }
-        .bt-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #6b7280;
-            transition: background .3s;
-        }
-        .bt-dot.connected  { background: #34D399; box-shadow: 0 0 6px #34D399; }
-        .bt-dot.connecting { background: #FBBF24; animation: blink .7s infinite; }
-        .bt-dot.error      { background: #F87171; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
     </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
-
-<!-- BT Status Bar -->
-<div id="bt-status-bar">
-    <div id="bt-dot" class="bt-dot"></div>
-    <span id="bt-status-text">Disconnected</span>
-    <button id="bt-disconnect-btn" title="Disconnect" style="display:none;background:none;border:none;color:#F87171;cursor:pointer;font-size:.75rem;padding:0 0 0 .25rem;">✕</button>
-</div>
 
 <!-- Settings Button (gear icon) -->
 <button id="settings-btn" title="Settings">
@@ -215,32 +214,18 @@
             <div id="toggle-inspection" class="toggle-track on"><div class="toggle-knob"></div></div>
         </div>
 
-        <div class="settings-row" style="padding-top:.75rem;">
-            <div>
-                <div class="settings-label">🔵 Bluetooth Timer</div>
-                <div class="settings-desc">GAN Smart Timer / GAN Smart Cube (BLE)</div>
-            </div>
-            <button id="bt-connect-btn"
-                class="text-xs font-bold py-2 px-4 rounded-lg"
-                style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);color:#93c5fd;cursor:pointer;transition:background .2s;white-space:nowrap;"
-                onmouseover="this.style.background='rgba(96,165,250,.28)'"
-                onmouseout="this.style.background='rgba(96,165,250,.15)'">
-                Connect
-            </button>
-        </div>
-        <div id="bt-info-row" class="settings-row" style="display:none; padding:.5rem 0 .25rem;">
-            <div style="width:100%">
-                <div id="bt-device-name" class="settings-label" style="color:#93c5fd;font-size:.8rem;"></div>
-                <div class="settings-desc">Timer events auto-start/stop the solve timer.<br>Moves from smart cubes start the timer on first move.</div>
-            </div>
-        </div>
-
         <div class="settings-row" style="padding-top:1rem;">
             <div>
-                <div class="settings-label">Manual Entry Mode</div>
-                <div class="settings-desc">Type times directly into the timer panel</div>
+                <div class="settings-label">Manual Time Entry</div>
+                <div class="settings-desc">Add a time without running the timer</div>
             </div>
-            <div id="toggle-manual" class="toggle-track"><div class="toggle-knob"></div></div>
+            <button id="open-manual-btn"
+                class="text-xs font-bold py-2 px-4 rounded-lg"
+                style="background:rgba(103,232,249,.15);border:1px solid rgba(103,232,249,.4);color:#67E8F9;cursor:pointer;transition:background .2s;"
+                onmouseover="this.style.background='rgba(103,232,249,.28)'"
+                onmouseout="this.style.background='rgba(103,232,249,.15)'">
+                Enter Time
+            </button>
         </div>
 
         <button id="close-settings-btn"
@@ -253,6 +238,31 @@
     </div>
 </div>
 
+<!-- Manual Time Entry Modal -->
+<div id="manual-modal">
+    <div class="modal-box">
+        <h2 class="text-lg font-bold text-cyan-300 mb-1 text-center" style="font-family:'Orbitron',sans-serif;">Manual Entry</h2>
+        <p class="text-center text-xs mb-4" style="color:rgba(255,255,255,.4);">Type digits — last 2 are centiseconds<br><span style="color:rgba(103,232,249,.6);">456 → 4.56 &nbsp;|&nbsp; 1234 → 12.34 &nbsp;|&nbsp; 10023 → 1:00.23</span></p>
+
+        <input id="manual-input" type="text" inputmode="numeric" maxlength="7" placeholder="0" autocomplete="off" />
+        <div id="manual-preview">—</div>
+
+        <div class="flex gap-3 mt-6">
+            <button id="manual-cancel-btn"
+                class="flex-1 py-2 rounded-lg font-bold text-sm"
+                style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#9ca3af;cursor:pointer;">
+                Cancel
+            </button>
+            <button id="manual-confirm-btn"
+                class="flex-1 py-2 rounded-lg font-bold text-sm"
+                style="background:rgba(52,211,153,.2);border:1px solid rgba(52,211,153,.5);color:#34D399;cursor:pointer;transition:background .2s;"
+                onmouseover="this.style.background='rgba(52,211,153,.35)'"
+                onmouseout="this.style.background='rgba(52,211,153,.2)'">
+                Add Time ✓
+            </button>
+        </div>
+    </div>
+</div>
 
 <div class="relative w-full h-screen flex flex-col md:flex-row p-2 sm:p-4 gap-4 z-10">
 
@@ -291,47 +301,7 @@
     <div id="right-column" class="w-full md:w-1/2 lg:w-2/3 flex flex-col gap-4">
 
         <div id="timer-container" class="panel flex-1 flex items-center justify-center">
-            <!-- Normal timer display -->
             <h1 id="timer" class="timer-display font-black tracking-tighter">0.00</h1>
-
-            <!-- Manual entry UI (hidden by default) -->
-            <div id="manual-inline" style="display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; padding: 1.5rem;">
-                <div style="font-size:.75rem; color:rgba(255,255,255,.35); margin-bottom:1rem; letter-spacing:.08em; text-transform:uppercase;">Manual Entry Mode</div>
-                <input id="inline-manual-input"
-                    type="text" inputmode="numeric" maxlength="7" placeholder="000"
-                    autocomplete="off" spellcheck="false"
-                    style="
-                        font-family:'Orbitron',sans-serif;
-                        font-size: clamp(2.5rem, 10vw, 6rem);
-                        font-weight:900;
-                        text-align:center;
-                        width:100%;
-                        background:transparent;
-                        border:none;
-                        border-bottom: 2px solid rgba(103,232,249,.35);
-                        color:#67E8F9;
-                        text-shadow: 0 0 20px rgba(103,232,249,.6);
-                        outline:none;
-                        letter-spacing:0.05em;
-                        padding:.25rem 0;
-                        caret-color: #67E8F9;
-                        transition: border-color .2s, text-shadow .2s;
-                    "
-                />
-                <div id="inline-manual-preview"
-                    style="
-                        font-family:'Orbitron',sans-serif;
-                        font-size:clamp(1rem,3vw,1.6rem);
-                        color:rgba(255,255,255,.3);
-                        margin-top:.75rem;
-                        min-height:2rem;
-                        transition: color .2s;
-                    ">—</div>
-                <div style="font-size:.7rem; color:rgba(255,255,255,.2); margin-top:.6rem;">
-                    Press <kbd style="background:rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:.25rem;color:rgba(255,255,255,.5);">Enter</kbd> to save &nbsp;·&nbsp;
-                    <kbd style="background:rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:.25rem;color:rgba(255,255,255,.5);">Esc</kbd> to exit mode
-                </div>
-            </div>
         </div>
 
         <div id="stats-panel" class="panel p-4 shadow-lg flex flex-col sm:flex-row justify-around items-center">
@@ -740,19 +710,18 @@ settingsModal.addEventListener('click', e => {
 
 
 // ═══════════════════════════════════════════════════════════════
-//  MANUAL ENTRY MODE (inline in timer panel)
+//  MANUAL TIME ENTRY
 // ═══════════════════════════════════════════════════════════════
-const inlineInput   = document.getElementById('inline-manual-input');
-const inlinePreview = document.getElementById('inline-manual-preview');
-const manualInline  = document.getElementById('manual-inline');
-const toggleManual  = document.getElementById('toggle-manual');
+const manualModal   = document.getElementById('manual-modal');
+const manualInput   = document.getElementById('manual-input');
+const manualPreview = document.getElementById('manual-preview');
 
-let manualModeActive = JSON.parse(localStorage.getItem('wcaSettingManual') ?? 'false');
-
+/** Convert raw digit string (e.g. "456") → milliseconds (4560) */
 function digitsToMs(digits) {
     if (!digits || digits === '0') return 0;
+    // Pad to at least 3 digits so last 2 are always centiseconds
     const padded = digits.padStart(3, '0');
-    const cs  = parseInt(padded.slice(-2), 10);
+    const cs  = parseInt(padded.slice(-2), 10);       // centiseconds
     const sec = parseInt(padded.slice(-4, -2) || '0', 10);
     const min = parseInt(padded.slice(0, -4) || '0', 10);
     return (min * 60 + sec) * 1000 + cs * 10;
@@ -768,86 +737,42 @@ function formatManualPreview(digits) {
     return `${sec}.${String(cs).padStart(2,'0')}`;
 }
 
-function enterManualMode() {
-    manualModeActive = true;
-    localStorage.setItem('wcaSettingManual', 'true');
-    toggleManual.classList.add('on');
-    document.body.classList.add('manual-mode');
-    // Hide normal timer, show inline entry
-    timerEl.style.display = 'none';
-    manualInline.style.display = 'flex';
-    inlineInput.value = '';
-    inlinePreview.textContent = '—';
-    cancelSolve(); // stop any running timer
-    setTimeout(() => inlineInput.focus(), 50);
-}
+manualInput.addEventListener('input', () => {
+    // Strip non-digits
+    manualInput.value = manualInput.value.replace(/\D/g, '');
+    manualPreview.textContent = formatManualPreview(manualInput.value) || '—';
+});
 
-function exitManualMode() {
-    manualModeActive = false;
-    localStorage.setItem('wcaSettingManual', 'false');
-    toggleManual.classList.remove('on');
-    document.body.classList.remove('manual-mode');
-    timerEl.style.display = '';
-    manualInline.style.display = 'none';
-    timerEl.textContent = formatTime(0);
-}
-
-function syncManualToggleUI() {
-    if (manualModeActive) {
-        toggleManual.classList.add('on');
-        document.body.classList.add('manual-mode');
-        timerEl.style.display = 'none';
-        manualInline.style.display = 'flex';
-    } else {
-        toggleManual.classList.remove('on');
-    }
-}
-
-toggleManual.addEventListener('click', () => {
-    if (manualModeActive) exitManualMode();
-    else enterManualMode();
+function openManualModal() {
+    manualInput.value = '';
+    manualPreview.textContent = '—';
     settingsModal.classList.remove('open');
-});
+    manualModal.classList.add('open');
+    setTimeout(() => manualInput.focus(), 200);
+}
 
-// Live preview as user types
-inlineInput.addEventListener('input', () => {
-    inlineInput.value = inlineInput.value.replace(/\D/g, '');
-    const preview = formatManualPreview(inlineInput.value);
-    inlinePreview.textContent = preview || '—';
-    // tint preview green when valid
-    inlinePreview.style.color = inlineInput.value ? 'rgba(52,211,153,.7)' : 'rgba(255,255,255,.3)';
-});
+function closeManualModal() {
+    manualModal.classList.remove('open');
+}
 
-function submitManualTime() {
-    const digits = inlineInput.value;
+document.getElementById('open-manual-btn').addEventListener('click', openManualModal);
+document.getElementById('manual-cancel-btn').addEventListener('click', closeManualModal);
+manualModal.addEventListener('click', e => { if (e.target === manualModal) closeManualModal(); });
+
+document.getElementById('manual-confirm-btn').addEventListener('click', () => {
+    const digits = manualInput.value;
     if (!digits) return;
     const ms = digitsToMs(digits);
     if (ms <= 0) return;
-
-    // Flash animation on input
-    inlineInput.classList.remove('save-flash');
-    void inlineInput.offsetWidth; // reflow to restart animation
-    inlineInput.classList.add('save-flash');
-    setTimeout(() => inlineInput.classList.remove('save-flash'), 400);
-
     addTime({ baseTime: ms, status: 'ok', event: eventSel.value });
+    closeManualModal();
     generateScramble();
-
-    // Clear for next entry
-    inlineInput.value = '';
-    inlinePreview.textContent = '—';
-    inlinePreview.style.color = 'rgba(255,255,255,.3)';
-    inlineInput.focus();
-}
-
-inlineInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); submitManualTime(); }
-    if (e.key === 'Escape') { e.preventDefault(); exitManualMode(); }
 });
 
-// Keep focus on input when in manual mode and user clicks the panel
-document.getElementById('timer-container').addEventListener('click', () => {
-    if (manualModeActive) inlineInput.focus();
+// Enter key confirms in manual modal
+manualInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('manual-confirm-btn').click();
+    if (e.key === 'Escape') closeManualModal();
 });
 
 
@@ -859,57 +784,6 @@ const timerCon = document.getElementById('timer-container');
 
 let times = [], timerState = 'idle', startTime = 0;
 let timerInterval, inspectionTimer, holdTimeout, inspectionPenalty = 0, audioCtx;
-
-// Expose mutable timer state + functions on window so the ESM BT module can reach them
-Object.defineProperties(window, {
-    timerState:        { get: () => timerState,        set: v => { timerState = v; },        configurable: true },
-    startTime:         { get: () => startTime,         set: v => { startTime = v; },          configurable: true },
-    inspectionTimer:   { get: () => inspectionTimer,   set: v => { inspectionTimer = v; },    configurable: true },
-    inspectionPenalty: { get: () => inspectionPenalty, set: v => { inspectionPenalty = v; },  configurable: true },
-});
-window.startTimer = () => startTimer();
-window.stopTimer  = (isDNF) => stopTimer(isDNF);
-// BT hardware timer reports exact ms — back-calculate startTime then stop normally
-window.btStopTimerWithMs = (elapsedMs) => { startTime = Date.now() - elapsedMs; stopTimer(); };
-
-// BT active flag — set by ESM module, disables keyboard/touch timer control
-window.btConnected = false;
-
-// BT-specific start/stop that bypass keyboard guards entirely
-window.btStart = function() {
-    console.log('[btStart] timerState=', timerState);
-    if (timerState !== 'idle' && timerState !== 'stopped') return;
-    clearInterval(inspectionTimer); inspectionTimer = null; inspectionPenalty = 0;
-    // Start timer without focus-mode (BT doesn't need touch-to-stop)
-    startTime = Date.now(); timerState = 'timing'; setTimerClass('timer-running');
-    timerInterval = setInterval(() => {
-        const e = Math.floor((Date.now() - startTime) / 10) * 10;
-        const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000), c = Math.floor((e % 1000) / 10);
-        timerEl.textContent = (m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s) + '.' + String(c).padStart(2,'0');
-    }, 30);
-    console.log('[btStart] timer started, timerState=', timerState);
-};
-window.btStop = function(exactMs) {
-    console.log('[btStop] called, timerState=', timerState, 'ms=', exactMs);
-    clearInterval(timerInterval);
-    clearInterval(inspectionTimer); inspectionTimer = null;
-    // Use passed ms (our own clock); fallback to elapsed if somehow null
-    const final = (exactMs != null && exactMs > 0)
-        ? exactMs
-        : (startTime > 0 ? Date.now() - startTime : 0);
-    console.log('[btStop] final=', final);
-    if (final <= 0) { console.warn('[btStop] final<=0, aborting'); return; }
-    timerState = 'stopped';
-    setTimerClass('');
-    // Floor to centiseconds so display and saved value match exactly
-    const finalFloored = Math.floor(final / 10) * 10;
-    timerEl.textContent = formatTime(finalFloored, 'ok');
-    document.body.classList.remove('focus-mode');
-    const ev = eventSel.value;
-    addTime({ baseTime: finalFloored, status: 'ok', event: ev });
-    generateScramble();
-    console.log('[btStop] saved', finalFloored, 'ms');
-};
 
 function setTimerClass(cls) {
     timerEl.className = 'timer-display font-black tracking-tighter' + (cls ? ' ' + cls : '');
@@ -1005,16 +879,14 @@ function cancelSolve() {
     document.body.classList.remove('focus-mode');
 }
 
-// Keyboard — block spacebar when a modal is open or in manual mode
+// Keyboard — block spacebar when a modal is open
 function anyModalOpen() {
-    return manualModeActive ||
-           settingsModal.classList.contains('open') ||
+    return settingsModal.classList.contains('open') || manualModal.classList.contains('open') ||
            !document.getElementById('info-modal').classList.contains('pointer-events-none');
 }
 
 window.addEventListener('keydown', e => {
-    if (anyModalOpen()) return;
-    if (window.btConnected) return; // BT owns the timer
+    if (anyModalOpen()) return; // don't interfere with modals
     if (e.code === 'Escape' && ['inspecting','arming','ready'].includes(timerState)) { e.preventDefault(); cancelSolve(); return; }
     if (timerState === 'timing') { e.preventDefault(); stopTimer(); return; }
     if (e.code === 'Space' && !e.repeat) {
@@ -1046,7 +918,6 @@ window.addEventListener('keyup', e => {
 // Touch
 timerCon.addEventListener('touchstart', e => {
     if (anyModalOpen()) return;
-    if (window.btConnected) return; // BT owns the timer
     if (e.touches.length > 1) return; e.preventDefault();
     if (timerState === 'timing') { stopTimer(); return; }
     if (timerState === 'idle' || timerState === 'stopped') {
@@ -1216,7 +1087,6 @@ document.getElementById('close-modal').addEventListener('click', () => {
 
 // Boot
 loadTimes(); renderHistory(); updateStats(); generateScramble();
-syncManualToggleUI();
 if (!localStorage.getItem('cubeTimerVisited')) {
     setTimeout(() => {
         const m = document.getElementById('info-modal');
@@ -1225,205 +1095,6 @@ if (!localStorage.getItem('cubeTimerVisited')) {
     }, 1000);
 }
 setTimeout(() => document.getElementById('contact-me-box').classList.add('visible'), 3000);
-
-</script>
-
-<!-- ═══════════════════════════════════════════════════════════════
-     GAN BLUETOOTH — gan-web-bluetooth via esm.sh (same lib as csTimer)
-     Supports: GAN Smart Timer, GAN Halo Timer, GAN Smart Cubes
-════════════════════════════════════════════════════════════════ -->
-<script type="module">
-import { connectGanTimer, connectGanCube, GanTimerState } from "https://esm.sh/gan-web-bluetooth@3";
-
-const btConnectBtn    = document.getElementById('bt-connect-btn');
-const btStatusBar     = document.getElementById('bt-status-bar');
-const btDot           = document.getElementById('bt-dot');
-const btStatusText    = document.getElementById('bt-status-text');
-const btDisconnectBtn = document.getElementById('bt-disconnect-btn');
-const btInfoRow       = document.getElementById('bt-info-row');
-const btDeviceName    = document.getElementById('bt-device-name');
-
-let btConn = null, btSub = null, btDeviceType = null;
-
-function setBtDot(cls) { btDot.className = 'bt-dot' + (cls ? ' ' + cls : ''); }
-function setBtLabel(txt) { btStatusText.textContent = txt; }
-
-function styleBtn(mode) {
-    const S = {
-        idle:       { bg:'rgba(96,165,250,.15)',  border:'rgba(96,165,250,.4)',  color:'#93c5fd', text:'Connect'    },
-        scanning:   { bg:'rgba(251,191,36,.12)',  border:'rgba(251,191,36,.4)',  color:'#fcd34d', text:'Scanning...'  },
-        disconnect: { bg:'rgba(248,113,113,.15)', border:'rgba(248,113,113,.4)', color:'#fca5a5', text:'Disconnect' },
-    };
-    const s = S[mode] || S.idle;
-    btConnectBtn.textContent   = s.text;
-    btConnectBtn.style.cssText = `background:${s.bg};border:1px solid ${s.border};color:${s.color};cursor:pointer;transition:background .2s;white-space:nowrap;border-radius:.5rem;padding:.4rem .9rem;font-size:.75rem;font-weight:700;`;
-}
-
-function showConnected(name, type) {
-    window.btConnected = true;
-    setBtDot('connected'); setBtLabel(name);
-    btStatusBar.classList.add('show');
-    btDisconnectBtn.style.display = 'inline';
-    styleBtn('disconnect');
-    btInfoRow.style.display = 'block';
-    btDeviceName.textContent = type === 'timer'
-        ? 'Hardware Timer mode — hands-on start, lift to run, touch to stop'
-        : 'Smart Cube mode — first move starts, solved state stops';
-}
-
-function showDisconnected() {
-    window.btConnected = false;
-    setBtDot(''); setBtLabel('Disconnected');
-    btStatusBar.classList.remove('show');
-    btDisconnectBtn.style.display = 'none';
-    styleBtn('idle');
-    btInfoRow.style.display = 'none';
-    btConn = null; btSub = null; btDeviceType = null;
-}
-
-function showError(msg) {
-    setBtDot('error'); setBtLabel(msg);
-    btStatusBar.classList.add('show');
-    setTimeout(() => { if (!btConn) { btStatusBar.classList.remove('show'); styleBtn('idle'); } }, 3500);
-}
-
-function btStart() {
-    console.log('[ESM btStart] calling window.btStart');
-    window.btStart();
-}
-
-function btStop(exactMs) {
-    console.log('[ESM btStop] calling window.btStop with exactMs=', exactMs);
-    window.btStop(exactMs != null ? exactMs : null);
-}
-
-function doDisconnect() {
-    if (btSub)  { try { btSub.unsubscribe();   } catch(_) {} }
-    if (btConn) { try { btConn.disconnect?.();  } catch(_) {} }
-    showDisconnected();
-}
-btDisconnectBtn.addEventListener('click', doDisconnect);
-
-async function doConnectTimer() {
-    const conn = await connectGanTimer();
-    btConn = conn; btDeviceType = 'timer';
-    showConnected('GAN Smart Timer', 'timer');
-
-    btSub = conn.events$.subscribe({
-        next(ev) {
-            console.log('[GAN Timer] state:', GanTimerState[ev.state], ev);
-            switch (ev.state) {
-                case GanTimerState.HANDS_ON:  setBtLabel('Hands on...'); break;
-                case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
-                case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
-                case GanTimerState.STOPPED: {
-                    // Use our own clock (Date.now() - startTime) so the saved time
-                    // exactly matches what was shown on the display, not the hardware's
-                    // recordedTime which can differ by ~30-50ms due to BLE latency.
-                    const ms = startTime > 0 ? Date.now() - startTime : null;
-                    console.log('[GAN Timer] STOPPED, display ms:', ms, 'hardware recordedTime:', ev.recordedTime);
-                    setBtLabel('GAN Smart Timer');
-                    btStop(ms);
-                    break;
-                }
-                case GanTimerState.IDLE:
-                case GanTimerState.FINISHED:  setBtLabel('GAN Smart Timer'); break;
-                case GanTimerState.DISCONNECT: showDisconnected(); break;
-            }
-        },
-        error(e) { console.warn('[BT Timer]', e); showDisconnected(); }
-    });
-}
-
-async function doConnectCube() {
-    const conn = await connectGanCube();
-    btConn = conn; btDeviceType = 'cube';
-    const name = conn.deviceName || conn.device?.name || 'GAN Smart Cube';
-    showConnected(name, 'cube');
-
-    let flashTimeout = null;
-
-    btSub = conn.events$.subscribe({
-        next(ev) {
-            console.log('[GAN Cube] event:', ev.type, ev);
-            if (ev.type === 'MOVE') {
-                setBtLabel(name + '  ' + ev.move);
-                clearTimeout(flashTimeout);
-                flashTimeout = setTimeout(() => setBtLabel(name), 700);
-                if (window.timerState === 'inspecting') return;
-                if (window.timerState === 'idle' || window.timerState === 'stopped') { btStart(); return; }
-            }
-            if (ev.type === 'FACELETS' && window.timerState === 'timing') {
-                if (isGanSolved(ev.facelets)) btStop(null);
-            }
-        },
-        error(e) { console.warn('[BT Cube]', e); showDisconnected(); }
-    });
-
-    // Poll facelets every 500ms during solve to detect solved state
-    let pollInterval = setInterval(() => {
-        if (!btConn) { clearInterval(pollInterval); return; }
-        if (window.timerState === 'timing') {
-            conn.sendCubeCommand?.({ type: 'REQUEST_FACELETS' }).catch(() => {});
-        }
-    }, 500);
-}
-
-// Facelets string for solved 3x3 (URFDLB order, 9 stickers each)
-const SOLVED = 'UUUUUUUUURRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
-function isGanSolved(f) {
-    if (!f) return false;
-    const s = Array.isArray(f) ? (f.flat ? f.flat() : f).join('') : f;
-    return s.toUpperCase() === SOLVED;
-}
-
-async function connectBt() {
-    if (btConn) { doDisconnect(); return; }
-    if (!navigator.bluetooth) {
-        alert('Web Bluetooth not supported.\nUse Chrome or Edge (desktop/Android).\nPage must be on HTTPS or localhost.');
-        return;
-    }
-    setBtDot('connecting'); setBtLabel('Scanning...'); btStatusBar.classList.add('show');
-    styleBtn('scanning'); btConnectBtn.disabled = true;
-
-    try {
-        const typeRadio = document.querySelector('input[name="bt-type"]:checked');
-        if (typeRadio?.value === 'cube') await doConnectCube();
-        else await doConnectTimer();
-    } catch (err) {
-        btConnectBtn.disabled = false;
-        if (err?.name === 'NotFoundError' || /cancel/i.test(err?.message ?? '')) {
-            showDisconnected();
-        } else {
-            showError('Connection failed');
-            console.warn('[BT] connect error:', err);
-        }
-        return;
-    }
-    btConnectBtn.disabled = false;
-}
-
-btConnectBtn.addEventListener('click', connectBt);
-
-// Inject Timer/Cube radio selector into settings modal
-(function() {
-    const settingsBox = document.querySelector('#settings-modal .modal-box');
-    const btRowRef = document.getElementById('bt-info-row');
-    const typeRow = document.createElement('div');
-    typeRow.style.cssText = 'display:flex;gap:.75rem;align-items:center;padding:.35rem 0 0;flex-wrap:wrap;';
-    typeRow.innerHTML = `
-        <span style="font-size:.72rem;color:rgba(255,255,255,.35);">Device type:</span>
-        <label style="font-size:.78rem;color:#d1d5db;display:flex;align-items:center;gap:.3rem;cursor:pointer;">
-            <input type="radio" id="bt-type-timer" name="bt-type" value="timer" checked style="accent-color:#67E8F9;"> Smart Timer
-        </label>
-        <label style="font-size:.78rem;color:#d1d5db;display:flex;align-items:center;gap:.3rem;cursor:pointer;">
-            <input type="radio" id="bt-type-cube" name="bt-type" value="cube" style="accent-color:#67E8F9;"> Smart Cube
-        </label>`;
-    settingsBox.insertBefore(typeRow, btRowRef);
-    document.querySelectorAll('input[name="bt-type"]').forEach(r => {
-        r.addEventListener('change', () => { if (btConn) doDisconnect(); });
-    });
-})();
 
 </script>
 </body>
