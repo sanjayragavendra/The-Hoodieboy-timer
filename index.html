@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy Timer</title>
+    <title>The Hoodieboy Tiaamer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
@@ -877,38 +877,27 @@ window.btConnected = false;
 
 // BT-specific start/stop that bypass keyboard guards entirely
 window.btStart = function() {
-    console.log('[btStart] timerState=', timerState);
     if (timerState !== 'idle' && timerState !== 'stopped') return;
     clearInterval(inspectionTimer); inspectionTimer = null; inspectionPenalty = 0;
-    // Start timer without focus-mode (BT doesn't need touch-to-stop)
+    // Start without focus-mode — BT hardware owns stop, not keyboard/touch
     startTime = Date.now(); timerState = 'timing'; setTimerClass('timer-running');
     timerInterval = setInterval(() => {
         const e = Math.floor((Date.now() - startTime) / 10) * 10;
         const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000), c = Math.floor((e % 1000) / 10);
         timerEl.textContent = (m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s) + '.' + String(c).padStart(2,'0');
     }, 30);
-    console.log('[btStart] timer started, timerState=', timerState);
 };
 window.btStop = function(exactMs) {
-    console.log('[btStop] called, timerState=', timerState, 'ms=', exactMs);
     clearInterval(timerInterval);
     clearInterval(inspectionTimer); inspectionTimer = null;
-    // Use passed ms (our own clock); fallback to elapsed if somehow null
-    const final = (exactMs != null && exactMs > 0)
-        ? exactMs
-        : (startTime > 0 ? Date.now() - startTime : 0);
-    console.log('[btStop] final=', final);
-    if (final <= 0) { console.warn('[btStop] final<=0, aborting'); return; }
+    if (!exactMs || exactMs <= 0) { console.warn('[btStop] no valid time, aborting'); return; }
     timerState = 'stopped';
     setTimerClass('');
-    // Floor to centiseconds so display and saved value match exactly
-    const finalFloored = Math.floor(final / 10) * 10;
-    timerEl.textContent = formatTime(finalFloored, 'ok');
+    // Display and saved value are BOTH the hardware time — they will always match
+    timerEl.textContent = formatTime(exactMs, 'ok');
     document.body.classList.remove('focus-mode');
-    const ev = eventSel.value;
-    addTime({ baseTime: finalFloored, status: 'ok', event: ev });
+    addTime({ baseTime: exactMs, status: 'ok', event: eventSel.value });
     generateScramble();
-    console.log('[btStop] saved', finalFloored, 'ms');
 };
 
 function setTimerClass(cls) {
@@ -1287,15 +1276,8 @@ function showError(msg) {
     setTimeout(() => { if (!btConn) { btStatusBar.classList.remove('show'); styleBtn('idle'); } }, 3500);
 }
 
-function btStart() {
-    console.log('[ESM btStart] calling window.btStart');
-    window.btStart();
-}
-
-function btStop(exactMs) {
-    console.log('[ESM btStop] calling window.btStop with exactMs=', exactMs);
-    window.btStop(exactMs != null ? exactMs : null);
-}
+function btStart() { window.btStart(); }
+function btStop(exactMs) { window.btStop(exactMs); }
 
 function doDisconnect() {
     if (btSub)  { try { btSub.unsubscribe();   } catch(_) {} }
@@ -1311,17 +1293,16 @@ async function doConnectTimer() {
 
     btSub = conn.events$.subscribe({
         next(ev) {
-            console.log('[GAN Timer] state:', GanTimerState[ev.state], ev);
             switch (ev.state) {
                 case GanTimerState.HANDS_ON:  setBtLabel('Hands on...'); break;
                 case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
                 case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
                 case GanTimerState.STOPPED: {
-                    // Use our own clock (Date.now() - startTime) so the saved time
-                    // exactly matches what was shown on the display, not the hardware's
-                    // recordedTime which can differ by ~30-50ms due to BLE latency.
-                    const ms = startTime > 0 ? Date.now() - startTime : null;
-                    console.log('[GAN Timer] STOPPED, display ms:', ms, 'hardware recordedTime:', ev.recordedTime);
+                    // recordedTime is the hardware's exact measured time in ms — this IS the ground truth.
+                    // Use it for BOTH the saved value and the frozen display so they always match.
+                    const ms = (typeof ev.recordedTime === 'number' && ev.recordedTime > 0)
+                        ? ev.recordedTime
+                        : (startTime > 0 ? Date.now() - startTime : 0);
                     setBtLabel('GAN Smart Timer');
                     btStop(ms);
                     break;
@@ -1345,7 +1326,6 @@ async function doConnectCube() {
 
     btSub = conn.events$.subscribe({
         next(ev) {
-            console.log('[GAN Cube] event:', ev.type, ev);
             if (ev.type === 'MOVE') {
                 setBtLabel(name + '  ' + ev.move);
                 clearTimeout(flashTimeout);
