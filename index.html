@@ -3,68 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy Timesar</title>
+    <title>The Hoodieboy Timer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+
+    <!--
+        THE ONLY CORRECT WAY to use cubing.js in a plain HTML file:
+        1. Load the twisty script as type="module"
+        2. Put <twisty-player> tags directly in HTML — they upgrade automatically
+        3. Update .alg property in a type="module" script
+        No imports needed for the HTML tag approach.
+    -->
+    <script src="https://cdn.cubing.net/v0/js/cubing/twisty" type="module"></script>
+
     <style>
-        body { font-family:'Roboto Mono',monospace; color:white; text-shadow:0 0 8px rgba(0,255,255,0.7); background:#0c0a15; overflow:hidden; }
-        #bg-canvas { position:fixed; inset:0; z-index:-1; }
-        .panel { background:rgba(17,24,39,0.75); border:1px solid rgba(255,255,255,0.1); border-radius:1rem; }
-        .timer-inspecting { color:#67E8F9; text-shadow:0 0 15px #67E8F9; }
-        .timer-ready      { color:#34D399; text-shadow:0 0 15px #34D399; }
-        .timer-running    { color:#F87171; text-shadow:0 0 20px #F87171; }
-        .timer-penalty    { color:#FBBF24; text-shadow:0 0 15px #FBBF24; }
-        .timer-display    { font-family:'Orbitron',sans-serif; font-size:clamp(2.5rem,12vw,8rem); transition:color .3s,text-shadow .3s; }
-        .inspection-tick  { animation:ipulse .5s ease-in-out; }
-        @keyframes ipulse  { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
-        @keyframes best-celebrate {
-            0%  {transform:scale(1);color:white;text-shadow:none}
-            25% {transform:scale(1.15);color:#fde047;text-shadow:0 0 30px #fde047}
-            50% {transform:scale(1.05);color:#bef264;text-shadow:0 0 30px #84cc16}
-            75% {transform:scale(1.15);color:#67E8F9;text-shadow:0 0 30px #06b6d4}
-            100%{transform:scale(1);color:white;text-shadow:none}
+        body{font-family:'Roboto Mono',monospace;color:white;text-shadow:0 0 8px rgba(0,255,255,.7);background:#0c0a15;overflow:hidden}
+        #bg-canvas{position:fixed;inset:0;z-index:-1}
+        .panel{background:rgba(17,24,39,.75);border:1px solid rgba(255,255,255,.1);border-radius:1rem}
+        .timer-inspecting{color:#67E8F9;text-shadow:0 0 15px #67E8F9}
+        .timer-ready{color:#34D399;text-shadow:0 0 15px #34D399}
+        .timer-running{color:#F87171;text-shadow:0 0 20px #F87171}
+        .timer-penalty{color:#FBBF24;text-shadow:0 0 15px #FBBF24}
+        .timer-display{font-family:'Orbitron',sans-serif;font-size:clamp(2.5rem,12vw,8rem);transition:color .3s,text-shadow .3s}
+        .inspection-tick{animation:ipulse .5s ease-in-out}
+        @keyframes ipulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+        @keyframes best{0%{transform:scale(1);color:white;text-shadow:none}25%{transform:scale(1.15);color:#fde047;text-shadow:0 0 30px #fde047}50%{transform:scale(1.05);color:#bef264;text-shadow:0 0 30px #84cc16}75%{transform:scale(1.15);color:#67E8F9;text-shadow:0 0 30px #06b6d4}100%{transform:scale(1);color:white;text-shadow:none}}
+        .new-best-animation{animation:best 2.5s ease-in-out}
+        @keyframes worst{0%{transform:translateY(-80px) scaleY(1.2);opacity:0}20%{transform:translateY(0) scaleY(1);opacity:1}40%{transform:translateY(-20px) scaleY(1.05)}60%{transform:translateY(0) scaleY(1)}100%{transform:translateY(0) scaleY(1)}}
+        .new-worst-animation{animation:worst 1.2s cubic-bezier(.5,0,.5,1.5);color:#F87171;text-shadow:0 0 15px #F87171}
+        .scramble-text{font-size:clamp(.9rem,2.5vw,1.4rem);transition:opacity .5s;min-height:40px;line-height:1.4}
+        .history-table tr:hover{background:rgba(255,255,255,.05)}
+        .custom-select{background:rgba(31,41,55,.7);color:#d1d5db;border:1px solid rgba(255,255,255,.2)}
+        .status-dnf{color:#f87171;font-weight:bold}
+        .status-plus2{color:#fbbf24}
+
+        /* twisty-player lives here */
+        #viz-wrap{
+            margin:.75rem auto 0;
+            opacity:0;
+            transition:opacity .4s ease;
+            display:flex;
+            justify-content:center;
+            min-height:160px;
+            align-items:center;
         }
-        .new-best-animation { animation:best-celebrate 2.5s ease-in-out; }
-        @keyframes worst-drop {
-            0%  {transform:translateY(-80px) scaleY(1.2);opacity:0}
-            20% {transform:translateY(0) scaleY(1);opacity:1}
-            40% {transform:translateY(-20px) scaleY(1.05)}
-            60% {transform:translateY(0) scaleY(1)}
-            100%{transform:translateY(0) scaleY(1)}
+        #viz-wrap.visible{opacity:1}
+        twisty-player{
+            width:260px !important;
+            height:160px !important;
+            display:block;
         }
-        .new-worst-animation { animation:worst-drop 1.2s cubic-bezier(.5,0,.5,1.5); color:#F87171; text-shadow:0 0 15px #F87171; }
-        .scramble-text { font-size:clamp(.9rem,2.5vw,1.4rem); transition:opacity .5s,transform .5s; min-height:40px; line-height:1.4; }
-        .history-table tr:hover { background:rgba(255,255,255,.05); }
-        .custom-select { background:rgba(31,41,55,.7); color:#d1d5db; border:1px solid rgba(255,255,255,.2); }
-        .status-dnf   { color:#f87171; font-weight:bold; }
-        .status-plus2 { color:#fbbf24; }
-        #puzzle-visualization { margin:.75rem auto 0; opacity:0; transition:opacity .5s ease .1s; display:flex; justify-content:center; min-height:170px; }
-        #puzzle-visualization.show { opacity:1; }
-        twisty-player { width:100%; max-width:280px; height:170px; display:block; margin:0 auto; }
-        #left-column,#stats-panel,#contact-me-box { transition:opacity .4s,transform .4s; }
-        #timer-container { transition:all .5s; }
-        body.focus-mode #left-column  { opacity:0; transform:translateX(-100%); pointer-events:none; }
-        body.focus-mode #stats-panel  { opacity:0; transform:scale(.9); pointer-events:none; }
-        body.focus-mode #contact-me-box { opacity:0; transform:translateY(100%); pointer-events:none; }
-        body.focus-mode #timer-container { position:fixed; inset:0; z-index:100; width:100vw; height:100vh; margin:0; padding:0; background:rgba(12,10,21,.25); display:flex; align-items:center; justify-content:center; }
-        body.focus-mode #timer { font-size:clamp(5rem,25vw,18rem); }
-        #contact-me-box.visible { opacity:1; transform:translate(-50%,0); }
+
+        #left-column,#stats-panel,#contact-box{transition:opacity .4s,transform .4s}
+        #timer-container{transition:all .5s}
+        body.focus-mode #left-column{opacity:0;transform:translateX(-100%);pointer-events:none}
+        body.focus-mode #stats-panel{opacity:0;transform:scale(.9);pointer-events:none}
+        body.focus-mode #contact-box{opacity:0;transform:translateY(100%);pointer-events:none}
+        body.focus-mode #timer-container{position:fixed;inset:0;z-index:100;width:100vw;height:100vh;margin:0;padding:0;background:rgba(12,10,21,.25);display:flex;align-items:center;justify-content:center}
+        body.focus-mode #timer{font-size:clamp(5rem,25vw,18rem)}
+        #contact-box.visible{opacity:1;transform:translate(-50%,0)}
     </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
 
 <div class="relative w-full h-screen flex flex-col md:flex-row p-2 sm:p-4 gap-4 z-10">
+
+    <!-- LEFT COLUMN -->
     <div id="left-column" class="w-full md:w-1/2 lg:w-1/3 flex flex-col gap-4">
+
+        <!-- Scramble Panel -->
         <div class="panel p-4 shadow-lg">
             <div class="flex justify-center items-center mb-2 gap-4">
                 <h2 class="text-lg sm:text-xl text-cyan-300">Event</h2>
                 <select id="event-selector" class="custom-select rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cyan-400"></select>
             </div>
-            <p id="scramble" class="scramble-text text-center font-bold">Loading cubing.js…</p>
-            <div id="puzzle-visualization"></div>
+            <p id="scramble" class="scramble-text text-center font-bold">Generating scramble…</p>
+
+            <!-- twisty-player sits here permanently, we just update its alg -->
+            <div id="viz-wrap">
+                <twisty-player
+                    id="the-player"
+                    visualization="2D"
+                    hint-facelets="floating"
+                    background="none"
+                    control-panel="none"
+                    puzzle="3x3x3"
+                    alg=""
+                ></twisty-player>
+            </div>
         </div>
+
+        <!-- History Panel -->
         <div class="panel p-4 shadow-lg flex-1 flex flex-col min-h-0">
             <h2 class="text-center text-lg sm:text-xl text-cyan-300 mb-2 flex-shrink-0">History</h2>
             <div class="overflow-y-auto flex-grow">
@@ -77,6 +108,8 @@
             </div>
         </div>
     </div>
+
+    <!-- RIGHT COLUMN -->
     <div class="w-full md:w-1/2 lg:w-2/3 flex flex-col gap-4">
         <div id="timer-container" class="panel flex-1 flex items-center justify-center">
             <h1 id="timer" class="timer-display font-black tracking-tighter">0.00</h1>
@@ -85,16 +118,16 @@
             <div class="text-center">
                 <h2 class="text-lg sm:text-xl text-cyan-300 mb-2">Stats</h2>
                 <div class="grid grid-cols-2 gap-x-4">
-                    <p>Ao5: <span id="ao5" class="font-bold">N/A</span></p>
-                    <p>Ao12: <span id="ao12" class="font-bold">N/A</span></p>
-                    <p>Best: <span id="best" class="font-bold">N/A</span></p>
-                    <p>Worst: <span id="worst" class="font-bold">N/A</span></p>
+                    <p>Ao5:  <span id="ao5"   class="font-bold">N/A</span></p>
+                    <p>Ao12: <span id="ao12"  class="font-bold">N/A</span></p>
+                    <p>Best: <span id="best"  class="font-bold">N/A</span></p>
+                    <p>Worst:<span id="worst" class="font-bold">N/A</span></p>
                 </div>
             </div>
             <div class="text-center mt-4 sm:mt-0">
                 <h2 class="text-lg sm:text-xl text-cyan-300 mb-2">Data</h2>
                 <div class="flex justify-center gap-2">
-                    <button id="import-btn" class="text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded">Import</button>
+                    <button id="import-btn"     class="text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded">Import</button>
                     <button id="export-csv-btn" class="text-sm bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded">Export CSV</button>
                     <button id="export-txt-btn" class="text-sm bg-cyan-800 hover:bg-cyan-900 text-white font-bold py-2 px-3 rounded">Export TXT</button>
                 </div>
@@ -104,18 +137,19 @@
     </div>
 </div>
 
+<!-- Info Modal -->
 <div id="info-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-opacity duration-300">
     <div class="panel max-w-lg w-full p-6 rounded-2xl text-center scale-95 transition-transform duration-300">
         <h2 class="text-2xl font-bold text-cyan-300 mb-4">How to Use</h2>
         <p class="mb-2">1. Press <strong class="text-cyan-300">spacebar</strong> or <strong class="text-cyan-300">tap the timer</strong> to start 15s inspection.</p>
-        <p class="mb-2">2. <strong class="text-cyan-300">HOLD</strong> spacebar/timer — turns <strong class="text-green-400">green</strong> after 0.55s.</p>
-        <p class="mb-2">3. <strong class="text-cyan-300">RELEASE</strong> to start timing. Press any key or tap to stop.</p>
-        <p class="mb-2">4. Press <strong class="text-cyan-300">ESC</strong> to cancel inspection.</p>
+        <p class="mb-2">2. <strong class="text-cyan-300">HOLD</strong> — turns <strong class="text-green-400">green</strong> after 0.55s. Then <strong class="text-cyan-300">RELEASE</strong> to start.</p>
+        <p class="mb-2">3. Press <strong class="text-cyan-300">any key</strong> or tap to stop. <strong class="text-cyan-300">ESC</strong> cancels inspection.</p>
         <button id="close-modal" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg mt-2">Got it!</button>
     </div>
 </div>
 
-<div id="contact-me-box" class="fixed bottom-4 left-1/2 -translate-x-1/2 opacity-0 translate-y-full transition-all duration-300 z-20">
+<!-- Contact -->
+<div id="contact-box" class="fixed bottom-4 left-1/2 -translate-x-1/2 opacity-0 translate-y-full transition-all duration-300 z-20">
     <div class="panel p-3">
         <div class="flex items-center gap-4">
             <a href="https://www.instagram.com/thehoodiecuber/" target="_blank" class="text-gray-300 hover:text-white">
@@ -128,343 +162,401 @@
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     SINGLE type="module" script — cubing.js imports + all app logic
-     Everything must be in one module so imports work correctly
-═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════
+  ALL APP LOGIC — must be type="module" so we can import cubing.js
+  The twisty-player HTML tag above is already registered by the
+  <script src="...twisty" type="module"> in <head>.
+  Here we only import randomScrambleForEvent for scramble generation.
+════════════════════════════════════════════════════════════ -->
 <script type="module">
 
+// ── Only import what we need: scramble generation ────────────────────────────
 import { randomScrambleForEvent } from "https://cdn.cubing.net/v0/js/cubing/scramble";
-import { TwistyPlayer }           from "https://cdn.cubing.net/v0/js/cubing/twisty";
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// ── The twisty-player element is already in the DOM ──────────────────────────
+const thePlayer = document.getElementById('the-player');
+const vizWrap   = document.getElementById('viz-wrap');
+
+// ── WCA event → cubing.js puzzle id ──────────────────────────────────────────
 const WCA_EVENTS = {
     '333':'3x3x3 Cube','222':'2x2x2 Cube','444':'4x4x4 Cube',
     '555':'5x5x5 Cube','666':'6x6x6 Cube','777':'7x7x7 Cube',
     '333bf':'3x3x3 Blind','333fm':'Fewest Moves','333oh':'One-Handed',
     '444bf':'4x4x4 Blind','555bf':'5x5x5 Blind'
 };
-const PUZZLE_ID = {
+const TO_PUZZLE = {
     '333':'3x3x3','222':'2x2x2','444':'4x4x4','555':'5x5x5',
     '666':'6x6x6','777':'7x7x7',
     '333bf':'3x3x3','333fm':'3x3x3','333oh':'3x3x3',
     '444bf':'4x4x4','555bf':'5x5x5'
 };
 
-// ── DOM ───────────────────────────────────────────────────────────────────────
-const timerEl   = document.getElementById('timer');
-const timerCon  = document.getElementById('timer-container');
-const scrEl     = document.getElementById('scramble');
-const vizCon    = document.getElementById('puzzle-visualization');
-const evSel     = document.getElementById('event-selector');
-const histBody  = document.getElementById('history-body');
-const modal     = document.getElementById('info-modal');
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const timerEl  = document.getElementById('timer');
+const timerCon = document.getElementById('timer-container');
+const scrEl    = document.getElementById('scramble');
+const evSel    = document.getElementById('event-selector');
+const histBody = document.getElementById('history-body');
+const modal    = document.getElementById('info-modal');
 
-// ── Populate events ───────────────────────────────────────────────────────────
-Object.entries(WCA_EVENTS).forEach(([id,name])=>{
-    const o=document.createElement('option'); o.value=id; o.textContent=name; evSel.appendChild(o);
-});
-evSel.value = WCA_EVENTS[localStorage.getItem('wcaTimerEvent')] ? localStorage.getItem('wcaTimerEvent') : '333';
-
-// ── TwistyPlayer — one persistent instance, updated per scramble ──────────────
-let player = null;
-
-function getPlayer(puzzle) {
-    if (player && player.puzzle === puzzle) return player;
-    // Remove old player if puzzle changed
-    if (player) { vizCon.removeChild(player); player = null; }
-    player = new TwistyPlayer({
-        puzzle,
-        alg:           '',
-        visualization: '2D',
-        hintFacelets:  'floating',
-        background:    'none',
-        controlPanel:  'none',
-    });
-    player.style.cssText = 'width:100%;max-width:280px;height:170px;display:block;margin:0 auto;';
-    vizCon.appendChild(player);
-    return player;
+// ── Populate event selector ───────────────────────────────────────────────────
+for (const [id, name] of Object.entries(WCA_EVENTS)) {
+    const o = document.createElement('option');
+    o.value = id; o.textContent = name;
+    evSel.appendChild(o);
 }
+const savedEv = localStorage.getItem('wcaTimerEvent') || '333';
+evSel.value = WCA_EVENTS[savedEv] ? savedEv : '333';
 
-// ── Scramble generation ───────────────────────────────────────────────────────
+// ── Generate scramble ─────────────────────────────────────────────────────────
 async function newScramble() {
-    const event = evSel.value;
-    const puzzle = PUZZLE_ID[event];
+    const event  = evSel.value;
+    const puzzle = TO_PUZZLE[event] || '3x3x3';
+
     scrEl.textContent = 'Generating…';
-    vizCon.classList.remove('show');
+    vizWrap.classList.remove('visible');
 
-    let algStr;
     try {
+        // Get proper WCA scramble from cubing.js
         const algObj = await randomScrambleForEvent(event);
-        algStr = algObj.toString();
-    } catch(e) {
-        scrEl.textContent = '⚠ Need internet connection for scrambles';
-        return;
-    }
+        const algStr = algObj.toString();
 
-    scrEl.textContent = algStr;
+        // Update the scramble text
+        scrEl.textContent = algStr;
 
-    if (puzzle) {
-        const p = getPlayer(puzzle);
-        p.alg = algStr;
-        // Wait a tick for TwistyPlayer to process, then fade in
-        setTimeout(() => vizCon.classList.add('show'), 200);
+        // Update the twisty-player — set puzzle first, then alg
+        thePlayer.puzzle = puzzle;
+        thePlayer.alg    = algStr;
+
+        // Show with a short delay so the player has time to render
+        setTimeout(() => vizWrap.classList.add('visible'), 300);
+
+    } catch (err) {
+        console.error(err);
+        scrEl.textContent = '⚠ Could not generate scramble. Check internet connection.';
     }
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
-let times=[], state='idle', t0=0, tInt, inspInt, holdTO, inspPen=0, actx;
+let times = [], state = 'idle', t0 = 0;
+let tInt, inspInt, holdTO, inspPen = 0, actx;
 
-const setClass = c =>
-    timerEl.className = 'timer-display font-black tracking-tighter' + (c?' '+c:'');
-
-function fmt(ms, st='ok') {
-    if (st==='dnf') return 'DNF';
-    const v=ms+(st==='+2'?2000:0), m=Math.floor(v/60000), s=Math.floor((v%60000)/1000), c=Math.floor((v%1000)/10);
-    return (m?`${m}:${String(s).padStart(2,'0')}`:s)+'.'+String(c).padStart(2,'0')+(st==='+2'?'+':'');
+function setClass(c) {
+    timerEl.className = 'timer-display font-black tracking-tighter' + (c ? ' ' + c : '');
 }
 
-function beep(f=440,d=150){
-    try{ if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();o.connect(g);g.connect(actx.destination);
-    o.frequency.value=f;g.gain.setValueAtTime(.3,actx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d/1000);
-    o.start();o.stop(actx.currentTime+d/1000);}catch(e){}
-}
-function speak(t){ if('speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=1.3;u.pitch=1.2;speechSynthesis.speak(u);}else beep(660,150);}
-
-function startInsp(){
-    state='inspecting'; inspPen=0; let s=0;
-    timerEl.textContent=15; setClass('timer-inspecting');
-    inspInt=setInterval(()=>{
-        s++; if(!inspInt)return;
-        if(s<=15){timerEl.textContent=15-s; timerEl.classList.add('inspection-tick'); setTimeout(()=>timerEl.classList.remove('inspection-tick'),500);}
-        if(s===8||s===12) speak(s===8?'eight seconds':'twelve seconds');
-        if(s===15){inspPen=2000;setClass('timer-penalty');}
-        else if(s===17){inspPen='dnf';stopTimer(true);}
-    },1000);
+function fmt(ms, st = 'ok') {
+    if (st === 'dnf') return 'DNF';
+    const v = ms + (st === '+2' ? 2000 : 0);
+    const m = Math.floor(v / 60000), s = Math.floor((v % 60000) / 1000), c = Math.floor((v % 1000) / 10);
+    return (m ? `${m}:${String(s).padStart(2,'0')}` : s) + '.' + String(c).padStart(2,'0') + (st === '+2' ? '+' : '');
 }
 
-function startTimer(){
-    document.body.classList.add('focus-mode'); t0=Date.now(); state='timing';
-    setClass('timer-running');
-    tInt=setInterval(()=>{const e=Date.now()-t0,m=Math.floor(e/60000),s=Math.floor((e%60000)/1000);timerEl.textContent=m?`${m}:${String(s).padStart(2,'0')}`:s;},100);
+function beep(f = 440, d = 150) {
+    try {
+        if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.connect(g); g.connect(actx.destination);
+        o.frequency.value = f;
+        g.gain.setValueAtTime(.3, actx.currentTime);
+        g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + d / 1000);
+        o.start(); o.stop(actx.currentTime + d / 1000);
+    } catch(e) {}
 }
 
-function stopTimer(isDNF=false){
-    clearInterval(tInt); clearInterval(inspInt); inspInt=null;
-    const final=isDNF?Infinity:Date.now()-t0;
-    const st=isDNF||inspPen==='dnf'?'dnf':inspPen===2000?'+2':'ok';
-    state='stopped'; setClass(''); timerEl.textContent=fmt(final,st);
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.3; u.pitch = 1.2;
+        speechSynthesis.speak(u);
+    } else { beep(660, 150); }
+}
+
+function startInsp() {
+    state = 'inspecting'; inspPen = 0; let s = 0;
+    timerEl.textContent = 15; setClass('timer-inspecting');
+    inspInt = setInterval(() => {
+        s++;
+        if (!inspInt) return;
+        if (s <= 15) {
+            timerEl.textContent = 15 - s;
+            timerEl.classList.add('inspection-tick');
+            setTimeout(() => timerEl.classList.remove('inspection-tick'), 500);
+        }
+        if (s === 8 || s === 12) speak(s === 8 ? 'eight seconds' : 'twelve seconds');
+        if (s === 15) { inspPen = 2000; setClass('timer-penalty'); }
+        else if (s === 17) { inspPen = 'dnf'; stopTimer(true); }
+    }, 1000);
+}
+
+function startTimer() {
+    document.body.classList.add('focus-mode');
+    t0 = Date.now(); state = 'timing'; setClass('timer-running');
+    tInt = setInterval(() => {
+        const e = Date.now() - t0, m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000);
+        timerEl.textContent = m ? `${m}:${String(s).padStart(2,'0')}` : s;
+    }, 100);
+}
+
+function stopTimer(isDNF = false) {
+    clearInterval(tInt); clearInterval(inspInt); inspInt = null;
+    const final = isDNF ? Infinity : Date.now() - t0;
+    const st = (isDNF || inspPen === 'dnf') ? 'dnf' : inspPen === 2000 ? '+2' : 'ok';
+    state = 'stopped'; setClass(''); timerEl.textContent = fmt(final, st);
     document.body.classList.remove('focus-mode');
-    const ev=evSel.value, evT=times.filter(t=>t.event===ev);
-    addTime({baseTime:final,status:st,event:ev});
+
+    const ev = evSel.value;
+    const evT = times.filter(t => t.event === ev);
+    addTime({ baseTime: final, status: st, event: ev });
     newScramble();
-    const num=st==='dnf'?Infinity:final+(st==='+2'?2000:0);
-    if(num!==Infinity){
-        const b=Math.min(...evT.filter(t=>t.status!=='dnf').map(t=>t.baseTime+(t.status==='+2'?2000:0)),Infinity);
-        if(num<b){timerEl.classList.add('new-best-animation');setTimeout(()=>timerEl.classList.remove('new-best-animation'),2500);}
+
+    const num = st === 'dnf' ? Infinity : final + (st === '+2' ? 2000 : 0);
+    if (num !== Infinity) {
+        const best = Math.min(...evT.filter(t => t.status !== 'dnf').map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)), Infinity);
+        if (num < best) { timerEl.classList.add('new-best-animation'); setTimeout(() => timerEl.classList.remove('new-best-animation'), 2500); }
     }
-    const w=Math.max(...evT.map(t=>t.status==='dnf'?-1:t.baseTime+(t.status==='+2'?2000:0)),0);
-    if(num>w&&evT.length){timerEl.classList.add('new-worst-animation');setTimeout(()=>timerEl.classList.remove('new-worst-animation'),1200);}
+    const worst = Math.max(...evT.map(t => t.status === 'dnf' ? -1 : t.baseTime + (t.status === '+2' ? 2000 : 0)), 0);
+    if (num > worst && evT.length) { timerEl.classList.add('new-worst-animation'); setTimeout(() => timerEl.classList.remove('new-worst-animation'), 1200); }
 }
 
-function cancel(){
-    clearTimeout(holdTO);clearInterval(inspInt);inspInt=null;inspPen=0;
-    state='stopped';setClass('');timerEl.textContent=fmt(0);
+function cancel() {
+    clearTimeout(holdTO); clearInterval(inspInt); inspInt = null; inspPen = 0;
+    state = 'stopped'; setClass(''); timerEl.textContent = fmt(0);
     document.body.classList.remove('focus-mode');
 }
 
-window.addEventListener('keydown',e=>{
-    if(e.code==='Escape'&&['inspecting','arming','ready'].includes(state)){e.preventDefault();cancel();return;}
-    if(state==='timing'){e.preventDefault();stopTimer();return;}
-    if(e.code==='Space'&&!e.repeat){
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+    if (e.code === 'Escape' && ['inspecting','arming','ready'].includes(state)) { e.preventDefault(); cancel(); return; }
+    if (state === 'timing') { e.preventDefault(); stopTimer(); return; }
+    if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
-        if(state==='idle'||state==='stopped'){startInsp();}
-        else if(state==='inspecting'){
-            state='arming';setClass('timer-running');
-            holdTO=setTimeout(()=>{state='ready';setClass('timer-ready');},550);
+        if (state === 'idle' || state === 'stopped') { startInsp(); }
+        else if (state === 'inspecting') {
+            state = 'arming'; setClass('timer-running');
+            holdTO = setTimeout(() => { state = 'ready'; setClass('timer-ready'); }, 550);
         }
     }
 });
-window.addEventListener('keyup',e=>{
-    if(e.code==='Space'){
-        e.preventDefault();clearTimeout(holdTO);
-        if(state==='ready'){clearInterval(inspInt);inspInt=null;startTimer();}
-        else if(state==='arming'){state='inspecting';setClass(inspPen>0?'timer-penalty':'timer-inspecting');}
+window.addEventListener('keyup', e => {
+    if (e.code === 'Space') {
+        e.preventDefault(); clearTimeout(holdTO);
+        if (state === 'ready') { clearInterval(inspInt); inspInt = null; startTimer(); }
+        else if (state === 'arming') { state = 'inspecting'; setClass(inspPen > 0 ? 'timer-penalty' : 'timer-inspecting'); }
     }
 });
-timerCon.addEventListener('touchstart',e=>{
-    if(e.touches.length>1)return;e.preventDefault();
-    if(state==='timing'){stopTimer();return;}
-    if(state==='idle'||state==='stopped'){startInsp();}
-    else if(state==='inspecting'){
-        state='arming';setClass('timer-running');
-        holdTO=setTimeout(()=>{state='ready';setClass('timer-ready');},550);
+
+// ── Touch ─────────────────────────────────────────────────────────────────────
+timerCon.addEventListener('touchstart', e => {
+    if (e.touches.length > 1) return; e.preventDefault();
+    if (state === 'timing') { stopTimer(); return; }
+    if (state === 'idle' || state === 'stopped') { startInsp(); }
+    else if (state === 'inspecting') {
+        state = 'arming'; setClass('timer-running');
+        holdTO = setTimeout(() => { state = 'ready'; setClass('timer-ready'); }, 550);
     }
-},{passive:false});
-timerCon.addEventListener('touchend',e=>{
-    e.preventDefault();clearTimeout(holdTO);
-    if(state==='ready'){clearInterval(inspInt);inspInt=null;startTimer();}
-    else if(state==='arming'){state='inspecting';setClass(inspPen>0?'timer-penalty':'timer-inspecting');}
-},{passive:false});
+}, { passive: false });
+timerCon.addEventListener('touchend', e => {
+    e.preventDefault(); clearTimeout(holdTO);
+    if (state === 'ready') { clearInterval(inspInt); inspInt = null; startTimer(); }
+    else if (state === 'arming') { state = 'inspecting'; setClass(inspPen > 0 ? 'timer-penalty' : 'timer-inspecting'); }
+}, { passive: false });
 
-// ── History + Stats ───────────────────────────────────────────────────────────
-function save(){ localStorage.setItem('wcaTimerHistory',JSON.stringify(times)); }
-function load(){ times=JSON.parse(localStorage.getItem('wcaTimerHistory')||'[]'); }
+// ── History ───────────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('wcaTimerHistory', JSON.stringify(times)); }
+function load() { times = JSON.parse(localStorage.getItem('wcaTimerHistory') || '[]'); }
 
-function addTime(t){ times.push(t); save(); renderHist(); updateStats(); }
+function addTime(t) { times.push(t); save(); renderHist(); updateStats(); }
 
-function renderHist(){
-    histBody.innerHTML='';
-    const ev=evSel.value, evT=times.filter(t=>t.event===ev);
-    evT.slice().reverse().forEach((t,i)=>{
-        const oi=times.findIndex(x=>x===t), row=document.createElement('tr');
-        row.innerHTML=`<td class="p-2">${evT.length-i}</td>
+function renderHist() {
+    histBody.innerHTML = '';
+    const ev = evSel.value;
+    const evT = times.filter(t => t.event === ev);
+    evT.slice().reverse().forEach((t, i) => {
+        const oi = times.findIndex(x => x === t);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="p-2">${evT.length - i}</td>
             <td class="p-2 ${t.status==='dnf'?'status-dnf':t.status==='+2'?'status-plus2':''}">${fmt(t.baseTime,t.status)}</td>
             <td class="p-2"><div class="flex justify-center gap-1">
                 <button data-a="plus2" data-i="${oi}" class="font-bold text-yellow-400 text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">+2</button>
-                <button data-a="dnf"   data-i="${oi}" class="font-bold text-red-400 text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">DNF</button>
-                <button data-a="del"   data-i="${oi}" class="font-bold text-gray-400 text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">Del</button>
+                <button data-a="dnf"   data-i="${oi}" class="font-bold text-red-400   text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">DNF</button>
+                <button data-a="del"   data-i="${oi}" class="font-bold text-gray-400  text-xs py-1 px-2 rounded bg-gray-700/50 hover:bg-gray-700">Del</button>
             </div></td>`;
         histBody.appendChild(row);
     });
 }
 
-histBody.addEventListener('click',e=>{
-    const b=e.target.closest('button'); if(!b)return;
-    const a=b.dataset.a, i=parseInt(b.dataset.i);
-    if(a==='del'){
-        const n=parseInt(prompt('How many?','1')||'0'); if(!n||n<=0)return;
-        const ev=times[i].event; let c=0;
-        for(let j=i;j<times.length&&c<n;j++)if(times[j].event===ev){times.splice(j,1);j--;c++;}
-    } else if(a==='plus2'){ if(times[i].status!=='dnf')times[i].status=times[i].status==='+2'?'ok':'+2'; }
-    else if(a==='dnf'){ times[i].status=times[i].status==='dnf'?'ok':'dnf'; }
+histBody.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const a = b.dataset.a, i = parseInt(b.dataset.i);
+    if (a === 'del') {
+        const n = parseInt(prompt('How many?', '1') || '0'); if (!n || n <= 0) return;
+        const ev = times[i].event; let c = 0;
+        for (let j = i; j < times.length && c < n; j++) if (times[j].event === ev) { times.splice(j,1); j--; c++; }
+    } else if (a === 'plus2') {
+        if (times[i].status !== 'dnf') times[i].status = times[i].status === '+2' ? 'ok' : '+2';
+    } else if (a === 'dnf') {
+        times[i].status = times[i].status === 'dnf' ? 'ok' : 'dnf';
+    }
     save(); renderHist(); updateStats();
 });
 
-function ao(n){
-    const ev=times.filter(t=>t.event===evSel.value); if(ev.length<n)return null;
-    const last=ev.slice(-n); if(last.some(t=>t.status==='dnf'))return'DNF';
-    const s=last.map(t=>t.baseTime+(t.status==='+2'?2000:0)).sort((a,b)=>a-b);
-    return s.slice(1,-1).reduce((a,b)=>a+b,0)/(n-2);
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function calcAo(n) {
+    const ev = times.filter(t => t.event === evSel.value);
+    if (ev.length < n) return null;
+    const last = ev.slice(-n);
+    if (last.some(t => t.status === 'dnf')) return 'DNF';
+    const sorted = last.map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)).sort((a,b) => a-b);
+    return sorted.slice(1,-1).reduce((a,b) => a+b, 0) / (n-2);
 }
 
-function updateStats(){
-    const ev=times.filter(t=>t.event===evSel.value);
-    if(!ev.length){['ao5','ao12','best','worst'].forEach(id=>document.getElementById(id).textContent='N/A');return;}
-    const a5=ao(5),a12=ao(12);
-    document.getElementById('ao5').textContent  = a5==='DNF'?'DNF':a5?fmt(a5):'N/A';
-    document.getElementById('ao12').textContent = a12==='DNF'?'DNF':a12?fmt(a12):'N/A';
-    const v=ev.filter(t=>t.status!=='dnf');
-    if(v.length){
-        const b=v.reduce((p,c)=>p.baseTime+(p.status==='+2'?2000:0)<c.baseTime+(c.status==='+2'?2000:0)?p:c);
-        document.getElementById('best').textContent=fmt(b.baseTime,b.status);
-        const w=v.reduce((p,c)=>p.baseTime+(p.status==='+2'?2000:0)>c.baseTime+(c.status==='+2'?2000:0)?p:c);
-        document.getElementById('worst').textContent=fmt(w.baseTime,w.status);
+function updateStats() {
+    const ev = times.filter(t => t.event === evSel.value);
+    if (!ev.length) { ['ao5','ao12','best','worst'].forEach(id => document.getElementById(id).textContent='N/A'); return; }
+    const a5 = calcAo(5), a12 = calcAo(12);
+    document.getElementById('ao5').textContent  = a5  === 'DNF' ? 'DNF' : a5  ? fmt(a5)  : 'N/A';
+    document.getElementById('ao12').textContent = a12 === 'DNF' ? 'DNF' : a12 ? fmt(a12) : 'N/A';
+    const v = ev.filter(t => t.status !== 'dnf');
+    if (v.length) {
+        const b = v.reduce((p,c) => (p.baseTime+(p.status==='+2'?2000:0)) < (c.baseTime+(c.status==='+2'?2000:0)) ? p : c);
+        document.getElementById('best').textContent = fmt(b.baseTime, b.status);
+        const w = v.reduce((p,c) => (p.baseTime+(p.status==='+2'?2000:0)) > (c.baseTime+(c.status==='+2'?2000:0)) ? p : c);
+        document.getElementById('worst').textContent = fmt(w.baseTime, w.status);
     }
-    if(ev.some(t=>t.status==='dnf'))document.getElementById('worst').textContent='DNF';
+    if (ev.some(t => t.status === 'dnf')) document.getElementById('worst').textContent = 'DNF';
 }
 
 // ── Import / Export ───────────────────────────────────────────────────────────
-function dl(data,type,name){
-    const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([data],{type})),download:name});
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
+function dl(data, type, name) {
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([data],{type})), download: name });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
-const today=()=>new Date().toISOString().slice(0,10);
+const today = () => new Date().toISOString().slice(0,10);
 
-document.getElementById('export-csv-btn').onclick=()=>{
-    if(!times.length)return;
-    dl(['event,baseTime,status',...times.map(t=>[t.event,t.baseTime,t.status].join(','))].join('\n'),'text/csv',`hoodieboy-${today()}.csv`);
+document.getElementById('export-csv-btn').onclick = () => {
+    if (!times.length) return;
+    dl(['event,baseTime,status',...times.map(t=>[t.event,t.baseTime,t.status].join(','))].join('\n'), 'text/csv', `hoodieboy-${today()}.csv`);
 };
-document.getElementById('export-txt-btn').onclick=()=>{
-    if(!times.length)return;
-    const d={properties:{sessionData:'{"1":{"name":"Session 1"}}'}};
-    const s={}; times.forEach(t=>{if(!s[t.event])s[t.event]=[];s[t.event].push(t);});
-    let i=1; for(const e in s)d[`session${i++}`]=s[e].map(t=>[[(t.status==='+2'?2000:t.status==='dnf'?-1:0),t.status==='dnf'?0:t.baseTime],'','',0]);
-    dl(JSON.stringify(d,null,2),'text/plain',`hoodieboy-${today()}.txt`);
+document.getElementById('export-txt-btn').onclick = () => {
+    if (!times.length) return;
+    const d = { properties: { sessionData:'{"1":{"name":"Session 1"}}' } };
+    const s = {}; times.forEach(t => { if(!s[t.event]) s[t.event]=[]; s[t.event].push(t); });
+    let i = 1; for (const ev in s) d[`session${i++}`] = s[ev].map(t => [[(t.status==='+2'?2000:t.status==='dnf'?-1:0), t.status==='dnf'?0:t.baseTime],'','',0]);
+    dl(JSON.stringify(d,null,2), 'text/plain', `hoodieboy-${today()}.txt`);
 };
-document.getElementById('import-btn').onclick=()=>document.getElementById('import-file-input').click();
-document.getElementById('import-file-input').addEventListener('change',e=>{
-    const f=e.target.files[0]; if(!f)return;
-    const r=new FileReader(); r.onload=ev=>{ f.name.endsWith('.csv')?iCSV(ev.target.result):iTxt(ev.target.result); }; r.readAsText(f); e.target.value=null;
+document.getElementById('import-btn').onclick = () => document.getElementById('import-file-input').click();
+document.getElementById('import-file-input').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => { f.name.endsWith('.csv') ? iCSV(ev.target.result) : iTxt(ev.target.result); };
+    r.readAsText(f); e.target.value = null;
 });
-function iCSV(txt){
-    const L=txt.split(/[\r\n]+/).filter(l=>l); if(L.length<2)return;
-    const imp=[]; let err=0;
-    for(let i=1;i<L.length;i++){const[ev,bt,st]=L[i].split(',');const t=bt==='Infinity'?Infinity:parseFloat(bt);if(!WCA_EVENTS[ev]||isNaN(t)||!['ok','+2','dnf'].includes(st)){err++;continue;}imp.push({event:ev,baseTime:t,status:st});}
-    if(!imp.length){alert('No valid solves.');return;}
-    if(confirm(`Import ${imp.length} solves?`)){times=[...times,...imp];save();renderHist();updateStats();}
+function iCSV(txt) {
+    const L = txt.split(/[\r\n]+/).filter(l=>l); if (L.length < 2) return;
+    const imp = []; let err = 0;
+    for (let i = 1; i < L.length; i++) {
+        const [ev,bt,st] = L[i].split(','), t = bt==='Infinity'?Infinity:parseFloat(bt);
+        if (!WCA_EVENTS[ev]||isNaN(t)||!['ok','+2','dnf'].includes(st)) { err++; continue; }
+        imp.push({ event:ev, baseTime:t, status:st });
+    }
+    if (!imp.length) { alert('No valid solves.'); return; }
+    if (confirm(`Import ${imp.length} solves?`)) { times=[...times,...imp]; save(); renderHist(); updateStats(); }
 }
-function iTxt(txt){
-    let d; try{d=JSON.parse(txt);}catch{alert('Invalid file.');return;}
-    const all=[]; for(const k in d)if(k.startsWith('session'))d[k].forEach(s=>{if(!Array.isArray(s)||!Array.isArray(s[0]))return;const[[p,t]]=s;all.push({baseTime:p===-1?Infinity:t,status:p===-1?'dnf':p===2000?'+2':'ok',event:''}); });
-    if(!all.length){alert('No solves found.');return;}
-    const tgt=prompt(`Import ${all.length} solves to which event?\n(${Object.keys(WCA_EVENTS).join(', ')})`,evSel.value);
-    if(!tgt||!WCA_EVENTS[tgt])return; all.forEach(s=>s.event=tgt);
-    if(confirm(`Import ${all.length} solves?`)){times=[...times,...all];save();renderHist();updateStats();}
+function iTxt(txt) {
+    let d; try { d = JSON.parse(txt); } catch { alert('Invalid file.'); return; }
+    const all = [];
+    for (const k in d) if (k.startsWith('session')) d[k].forEach(s => {
+        if (!Array.isArray(s)||!Array.isArray(s[0])) return;
+        const [[p,t]] = s;
+        all.push({ baseTime:p===-1?Infinity:t, status:p===-1?'dnf':p===2000?'+2':'ok', event:'' });
+    });
+    if (!all.length) { alert('No solves found.'); return; }
+    const tgt = prompt(`Import to which event?\n(${Object.keys(WCA_EVENTS).join(', ')})`, evSel.value);
+    if (!tgt || !WCA_EVENTS[tgt]) return;
+    all.forEach(s => s.event = tgt);
+    if (confirm(`Import ${all.length} solves to "${WCA_EVENTS[tgt]}"?`)) { times=[...times,...all]; save(); renderHist(); updateStats(); }
 }
 
 // ── Event change ──────────────────────────────────────────────────────────────
-evSel.addEventListener('change', ()=>{
+evSel.addEventListener('change', () => {
     localStorage.setItem('wcaTimerEvent', evSel.value);
-    cancel();
-    // Reset player so it's recreated for new puzzle
-    if(player){ vizCon.removeChild(player); player=null; }
-    vizCon.classList.remove('show');
-    renderHist(); updateStats(); newScramble();
+    cancel(); renderHist(); updateStats(); newScramble();
 });
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-document.getElementById('close-modal').onclick=()=>{
+document.getElementById('close-modal').onclick = () => {
     modal.classList.add('opacity-0','pointer-events-none');
     modal.querySelector('div').classList.add('scale-95');
     localStorage.setItem('cubeTimerVisited','true');
 };
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 load(); renderHist(); updateStats();
 newScramble();
-if(!localStorage.getItem('cubeTimerVisited'))
-    setTimeout(()=>{modal.classList.remove('opacity-0','pointer-events-none');modal.querySelector('div').classList.remove('scale-95');},1000);
-setTimeout(()=>document.getElementById('contact-me-box').classList.add('visible'),3000);
+if (!localStorage.getItem('cubeTimerVisited')) {
+    setTimeout(() => { modal.classList.remove('opacity-0','pointer-events-none'); modal.querySelector('div').classList.remove('scale-95'); }, 1000);
+}
+setTimeout(() => document.getElementById('contact-box').classList.add('visible'), 3000);
 
 </script>
 
-<!-- Three.js background — standard script (NOT module, so THREE global works) -->
+<!-- Three.js background — plain script so THREE global is accessible -->
 <script>
-let _scene,_cam,_ren,_pts,_vel;
-const _m=new THREE.Vector2(10,10);
-function initBG(){
-    _scene=new THREE.Scene();
-    _cam=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,1000);
-    _ren=new THREE.WebGLRenderer({canvas:document.getElementById('bg-canvas'),alpha:true});
-    _ren.setPixelRatio(devicePixelRatio);_ren.setSize(innerWidth,innerHeight);
-    const N=5000,p=new Float32Array(N*3),v=new Float32Array(N*3),c=new Float32Array(N*3),col=new THREE.Color();
-    _vel=v;
-    for(let i=0;i<N;i++){const i3=i*3;p[i3]=(Math.random()-.5)*12;p[i3+1]=(Math.random()-.5)*12;p[i3+2]=(Math.random()-.5)*12;col.setHSL(Math.random(),.8,.6);c[i3]=col.r;c[i3+1]=col.g;c[i3+2]=col.b;}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3));
-    _pts=new THREE.Points(g,new THREE.PointsMaterial({size:.025,vertexColors:true,blending:THREE.AdditiveBlending,transparent:true,opacity:.9}));
-    _scene.add(_pts);_cam.position.z=5;
-    window.addEventListener('mousemove',e=>{_m.x=(e.clientX/innerWidth)*2-1;_m.y=-(e.clientY/innerHeight)*2+1;});
-    window.addEventListener('resize',()=>{_cam.aspect=innerWidth/innerHeight;_cam.updateProjectionMatrix();_ren.setSize(innerWidth,innerHeight);});
-    (function loop(){requestAnimationFrame(loop);
-        const t=performance.now()*.0001,pos=_pts.geometry.attributes.position.array;
-        const mv=new THREE.Vector3(_m.x,_m.y,.5).unproject(_cam);
-        const dir=mv.sub(_cam.position).normalize();
-        const mp=_cam.position.clone().add(dir.multiplyScalar(-_cam.position.z/dir.z));
-        for(let i=0;i<pos.length/3;i++){const i3=i*3,x=pos[i3],y=pos[i3+1];
-            _vel[i3]+=Math.cos(y*.4+t)*.00004;_vel[i3+1]+=Math.sin(x*.4+t)*.00004;
-            const dx=x-mp.x,dy=y-mp.y,d=Math.sqrt(dx*dx+dy*dy);
-            if(d<1.5){const f=(1.5-d)/1.5;_vel[i3]+=(dx/d)*f*.02;_vel[i3+1]+=(dy/d)*f*.02;}
-            _vel[i3]*=.97;_vel[i3+1]*=.97;pos[i3]+=_vel[i3];pos[i3+1]+=_vel[i3+1];
-            if(pos[i3]>6||pos[i3]<-6)_vel[i3]*=-.9;
-            if(pos[i3+1]>6||pos[i3+1]<-6)_vel[i3+1]*=-.9;
+(function() {
+    let scene, cam, ren, pts, vel;
+    const m = new THREE.Vector2(10,10);
+
+    function init() {
+        scene = new THREE.Scene();
+        cam   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, .1, 1000);
+        ren   = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+        ren.setPixelRatio(devicePixelRatio); ren.setSize(innerWidth, innerHeight);
+
+        const N=5000, p=new Float32Array(N*3), v=new Float32Array(N*3), c=new Float32Array(N*3), col=new THREE.Color();
+        vel = v;
+        for (let i=0; i<N; i++) {
+            const i3=i*3;
+            p[i3]=(Math.random()-.5)*12; p[i3+1]=(Math.random()-.5)*12; p[i3+2]=(Math.random()-.5)*12;
+            col.setHSL(Math.random(),.8,.6); c[i3]=col.r; c[i3+1]=col.g; c[i3+2]=col.b;
         }
-        _pts.geometry.attributes.position.needsUpdate=true;_ren.render(_scene,_cam);
-    })();
-}
-window.addEventListener('load',initBG);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(p,3));
+        g.setAttribute('color',    new THREE.BufferAttribute(c,3));
+        pts = new THREE.Points(g, new THREE.PointsMaterial({ size:.025, vertexColors:true, blending:THREE.AdditiveBlending, transparent:true, opacity:.9 }));
+        scene.add(pts); cam.position.z = 5;
+
+        window.addEventListener('mousemove', e => { m.x=(e.clientX/innerWidth)*2-1; m.y=-(e.clientY/innerHeight)*2+1; });
+        window.addEventListener('resize', () => { cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix(); ren.setSize(innerWidth,innerHeight); });
+
+        loop();
+    }
+
+    function loop() {
+        requestAnimationFrame(loop);
+        const t=performance.now()*.0001, pos=pts.geometry.attributes.position.array;
+        const mv = new THREE.Vector3(m.x,m.y,.5).unproject(cam);
+        const dir = mv.sub(cam.position).normalize();
+        const mp = cam.position.clone().add(dir.multiplyScalar(-cam.position.z/dir.z));
+        for (let i=0; i<pos.length/3; i++) {
+            const i3=i*3, x=pos[i3], y=pos[i3+1];
+            vel[i3]  += Math.cos(y*.4+t)*.00004;
+            vel[i3+1]+= Math.sin(x*.4+t)*.00004;
+            const dx=x-mp.x, dy=y-mp.y, d=Math.sqrt(dx*dx+dy*dy);
+            if (d<1.5) { const f=(1.5-d)/1.5; vel[i3]+=(dx/d)*f*.02; vel[i3+1]+=(dy/d)*f*.02; }
+            vel[i3]*=.97; vel[i3+1]*=.97;
+            pos[i3]+=vel[i3]; pos[i3+1]+=vel[i3+1];
+            if (pos[i3]>6||pos[i3]<-6) vel[i3]*=-.9;
+            if (pos[i3+1]>6||pos[i3+1]<-6) vel[i3+1]*=-.9;
+        }
+        pts.geometry.attributes.position.needsUpdate = true;
+        ren.render(scene, cam);
+    }
+
+    window.addEventListener('load', init);
+})();
 </script>
 </body>
 </html>
