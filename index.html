@@ -73,10 +73,186 @@
         }
         body.focus-mode #timer { font-size: clamp(5rem,25vw,18rem); }
         #contact-me-box.visible { opacity:1; transform:translate(-50%,0); }
+
+        /* ── SETTINGS MODAL ── */
+        #settings-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.75);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            z-index: 200;
+            opacity: 0; pointer-events: none;
+            transition: opacity .3s;
+        }
+        #settings-modal.open { opacity: 1; pointer-events: all; }
+        #settings-modal .modal-box {
+            background: rgba(15,20,35,.95);
+            border: 1px solid rgba(103,232,249,.25);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 0 40px rgba(103,232,249,.15);
+            transform: scale(.94);
+            transition: transform .3s;
+        }
+        #settings-modal.open .modal-box { transform: scale(1); }
+
+        .toggle-track {
+            width: 44px; height: 24px;
+            background: rgba(255,255,255,.15);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background .25s;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,.2);
+        }
+        .toggle-track.on { background: rgba(52,211,153,.5); border-color: #34D399; }
+        .toggle-knob {
+            position: absolute; top: 2px; left: 2px;
+            width: 18px; height: 18px;
+            background: white; border-radius: 50%;
+            transition: left .25s;
+            box-shadow: 0 1px 4px rgba(0,0,0,.4);
+        }
+        .toggle-track.on .toggle-knob { left: 22px; }
+
+        /* Settings button */
+        #settings-btn {
+            position: fixed; top: 1rem; right: 1rem;
+            z-index: 150;
+            width: 38px; height: 38px;
+            background: rgba(17,24,39,.8);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: .6rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        #settings-btn:hover { border-color: rgba(103,232,249,.6); box-shadow: 0 0 10px rgba(103,232,249,.2); }
+
+        #manual-input::-webkit-inner-spin-button,
+        #manual-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+        /* Manual mode — timer panel switches appearance */
+        body.manual-mode #timer-container {
+            border-color: rgba(103,232,249,.3);
+            box-shadow: 0 0 30px rgba(103,232,249,.08), inset 0 0 60px rgba(103,232,249,.04);
+        }
+        #inline-manual-input:focus {
+            border-bottom-color: rgba(103,232,249,.8) !important;
+            text-shadow: 0 0 30px rgba(103,232,249,.9) !important;
+        }
+        /* flash green when time is saved */
+        @keyframes save-flash {
+            0%  { border-bottom-color: rgba(52,211,153,.9); text-shadow: 0 0 30px rgba(52,211,153,.9); }
+            100%{ border-bottom-color: rgba(103,232,249,.35); text-shadow: 0 0 20px rgba(103,232,249,.6); }
+        }
+        .save-flash { animation: save-flash .4s ease-out; }
+
+        .settings-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-label { font-size: .9rem; color: #d1d5db; }
+        .settings-desc  { font-size: .72rem; color: rgba(255,255,255,.35); margin-top:.15rem; }
+
+        /* BT status pill */
+        #bt-status-bar {
+            position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+            z-index: 150;
+            display: none;
+            align-items: center; gap: .5rem;
+            padding: .35rem .85rem;
+            background: rgba(15,20,35,.9);
+            border-radius: 2rem;
+            font-size: .75rem;
+            border: 1px solid rgba(255,255,255,.15);
+            white-space: nowrap;
+        }
+        #bt-status-bar.show { display: flex; }
+        .bt-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #6b7280;
+            transition: background .3s;
+        }
+        .bt-dot.connected  { background: #34D399; box-shadow: 0 0 6px #34D399; }
+        .bt-dot.connecting { background: #FBBF24; animation: blink .7s infinite; }
+        .bt-dot.error      { background: #F87171; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
     </style>
 </head>
 <body>
 <canvas id="bg-canvas"></canvas>
+
+<!-- BT Status Bar -->
+<div id="bt-status-bar">
+    <div id="bt-dot" class="bt-dot"></div>
+    <span id="bt-status-text">Disconnected</span>
+    <button id="bt-disconnect-btn" title="Disconnect" style="display:none;background:none;border:none;color:#F87171;cursor:pointer;font-size:.75rem;padding:0 0 0 .25rem;">✕</button>
+</div>
+
+<!-- Settings Button (gear icon) -->
+<button id="settings-btn" title="Settings">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="rgba(103,232,249,0.85)" viewBox="0 0 16 16">
+        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+    </svg>
+</button>
+
+<!-- Settings Modal -->
+<div id="settings-modal">
+    <div class="modal-box">
+        <h2 class="text-xl font-bold text-cyan-300 mb-5 text-center" style="font-family:'Orbitron',sans-serif;letter-spacing:.05em;">⚙ Settings</h2>
+
+        <div class="settings-row">
+            <div>
+                <div class="settings-label">Inspection Time</div>
+                <div class="settings-desc">15-second WCA inspection before solve</div>
+            </div>
+            <div id="toggle-inspection" class="toggle-track on"><div class="toggle-knob"></div></div>
+        </div>
+
+        <div class="settings-row" style="padding-top:.75rem;">
+            <div>
+                <div class="settings-label">🔵 Bluetooth Timer</div>
+                <div class="settings-desc">GAN Smart Timer / GAN Smart Cube (BLE)</div>
+            </div>
+            <button id="bt-connect-btn"
+                class="text-xs font-bold py-2 px-4 rounded-lg"
+                style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);color:#93c5fd;cursor:pointer;transition:background .2s;white-space:nowrap;"
+                onmouseover="this.style.background='rgba(96,165,250,.28)'"
+                onmouseout="this.style.background='rgba(96,165,250,.15)'">
+                Connect
+            </button>
+        </div>
+        <div id="bt-info-row" class="settings-row" style="display:none; padding:.5rem 0 .25rem;">
+            <div style="width:100%">
+                <div id="bt-device-name" class="settings-label" style="color:#93c5fd;font-size:.8rem;"></div>
+                <div class="settings-desc">Timer events auto-start/stop the solve timer.<br>Moves from smart cubes start the timer on first move.</div>
+            </div>
+        </div>
+
+        <div class="settings-row" style="padding-top:1rem;">
+            <div>
+                <div class="settings-label">Manual Entry Mode</div>
+                <div class="settings-desc">Type times directly into the timer panel</div>
+            </div>
+            <div id="toggle-manual" class="toggle-track"><div class="toggle-knob"></div></div>
+        </div>
+
+        <button id="close-settings-btn"
+            class="w-full mt-6 py-2 rounded-lg font-bold text-sm"
+            style="background:rgba(103,232,249,.18);border:1px solid rgba(103,232,249,.35);color:#67E8F9;cursor:pointer;transition:background .2s;"
+            onmouseover="this.style.background='rgba(103,232,249,.3)'"
+            onmouseout="this.style.background='rgba(103,232,249,.18)'">
+            Close
+        </button>
+    </div>
+</div>
+
 
 <div class="relative w-full h-screen flex flex-col md:flex-row p-2 sm:p-4 gap-4 z-10">
 
@@ -115,7 +291,47 @@
     <div id="right-column" class="w-full md:w-1/2 lg:w-2/3 flex flex-col gap-4">
 
         <div id="timer-container" class="panel flex-1 flex items-center justify-center">
+            <!-- Normal timer display -->
             <h1 id="timer" class="timer-display font-black tracking-tighter">0.00</h1>
+
+            <!-- Manual entry UI (hidden by default) -->
+            <div id="manual-inline" style="display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; padding: 1.5rem;">
+                <div style="font-size:.75rem; color:rgba(255,255,255,.35); margin-bottom:1rem; letter-spacing:.08em; text-transform:uppercase;">Manual Entry Mode</div>
+                <input id="inline-manual-input"
+                    type="text" inputmode="numeric" maxlength="7" placeholder="000"
+                    autocomplete="off" spellcheck="false"
+                    style="
+                        font-family:'Orbitron',sans-serif;
+                        font-size: clamp(2.5rem, 10vw, 6rem);
+                        font-weight:900;
+                        text-align:center;
+                        width:100%;
+                        background:transparent;
+                        border:none;
+                        border-bottom: 2px solid rgba(103,232,249,.35);
+                        color:#67E8F9;
+                        text-shadow: 0 0 20px rgba(103,232,249,.6);
+                        outline:none;
+                        letter-spacing:0.05em;
+                        padding:.25rem 0;
+                        caret-color: #67E8F9;
+                        transition: border-color .2s, text-shadow .2s;
+                    "
+                />
+                <div id="inline-manual-preview"
+                    style="
+                        font-family:'Orbitron',sans-serif;
+                        font-size:clamp(1rem,3vw,1.6rem);
+                        color:rgba(255,255,255,.3);
+                        margin-top:.75rem;
+                        min-height:2rem;
+                        transition: color .2s;
+                    ">—</div>
+                <div style="font-size:.7rem; color:rgba(255,255,255,.2); margin-top:.6rem;">
+                    Press <kbd style="background:rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:.25rem;color:rgba(255,255,255,.5);">Enter</kbd> to save &nbsp;·&nbsp;
+                    <kbd style="background:rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:.25rem;color:rgba(255,255,255,.5);">Esc</kbd> to exit mode
+                </div>
+            </div>
         </div>
 
         <div id="stats-panel" class="panel p-4 shadow-lg flex flex-col sm:flex-row justify-around items-center">
@@ -172,6 +388,7 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  THREE.JS BACKGROUND
@@ -248,7 +465,9 @@
         renderer.render(scene, camera);
     }
 
-    window.addEventListener('load', init);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else { init(); }
 })();
 
 
@@ -314,7 +533,6 @@ function rotateFaceCW(cube, face, times) {
     }
 }
 
-// Each cycleX function does one CW quarter-turn of a single slice
 function cycleR(cube, col) {
     const n = cube.n;
     for (let r = 0; r < n; r++) {
@@ -420,14 +638,13 @@ const FACE_COLORS = {
 
 function renderNetSVG(cube) {
     const n  = cube.n;
-    const ss = Math.max(9, Math.floor(90 / n));   // sticker size px
+    const ss = Math.max(9, Math.floor(90 / n));
     const gap = 1;
-    const fp  = ss * n + gap * (n - 1);            // face pixel size
+    const fp  = ss * n + gap * (n - 1);
     const pad = 3;
     const W   = (fp + pad) * 4 + pad;
     const H   = (fp + pad) * 3 + pad;
 
-    // Cross layout: [col, row] for each face
     const LAYOUT = { U:[1,0], L:[0,1], F:[1,1], R:[2,1], B:[3,1], D:[1,2] };
 
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="display:block">`;
@@ -436,10 +653,8 @@ function renderNetSVG(cube) {
         const ox = pad + col * (fp + pad);
         const oy = pad + row * (fp + pad);
 
-        // Face background
         svg += `<rect x="${ox-1}" y="${oy-1}" width="${fp+2}" height="${fp+2}" rx="2" fill="#1a1a2e"/>`;
 
-        // Stickers
         const stickers = cube.f[fname];
         for (let si = 0; si < n * n; si++) {
             const r = Math.floor(si / n), c = si % n;
@@ -448,7 +663,6 @@ function renderNetSVG(cube) {
             svg += `<rect x="${x}" y="${y}" width="${ss}" height="${ss}" rx="1.5" fill="${FACE_COLORS[stickers[si]] || '#888'}" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`;
         }
 
-        // Face label
         svg += `<text x="${ox + fp/2}" y="${oy - 3}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.4)" font-family="monospace">${fname}</text>`;
     }
 
@@ -464,7 +678,6 @@ const scrambleEl  = document.getElementById('scramble');
 const vizCon      = document.getElementById('puzzle-visualization');
 const eventSel    = document.getElementById('event-selector');
 
-// Populate event selector
 Object.entries(WCA_EVENTS).forEach(([id, name]) => {
     const o = document.createElement('option');
     o.value = id; o.textContent = name;
@@ -490,6 +703,155 @@ function generateScramble() {
 
 
 // ═══════════════════════════════════════════════════════════════
+//  SETTINGS STATE
+// ═══════════════════════════════════════════════════════════════
+let settings = {
+    inspectionEnabled: JSON.parse(localStorage.getItem('wcaSettingInspection') ?? 'true')
+};
+
+function saveSettings() {
+    localStorage.setItem('wcaSettingInspection', JSON.stringify(settings.inspectionEnabled));
+}
+
+// Toggle UI sync
+const toggleInspection = document.getElementById('toggle-inspection');
+function syncToggleUI() {
+    toggleInspection.classList.toggle('on', settings.inspectionEnabled);
+}
+syncToggleUI();
+
+toggleInspection.addEventListener('click', () => {
+    settings.inspectionEnabled = !settings.inspectionEnabled;
+    syncToggleUI();
+    saveSettings();
+});
+
+// Settings modal open/close
+const settingsModal = document.getElementById('settings-modal');
+document.getElementById('settings-btn').addEventListener('click', () => {
+    settingsModal.classList.add('open');
+});
+document.getElementById('close-settings-btn').addEventListener('click', () => {
+    settingsModal.classList.remove('open');
+});
+settingsModal.addEventListener('click', e => {
+    if (e.target === settingsModal) settingsModal.classList.remove('open');
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+//  MANUAL ENTRY MODE (inline in timer panel)
+// ═══════════════════════════════════════════════════════════════
+const inlineInput   = document.getElementById('inline-manual-input');
+const inlinePreview = document.getElementById('inline-manual-preview');
+const manualInline  = document.getElementById('manual-inline');
+const toggleManual  = document.getElementById('toggle-manual');
+
+let manualModeActive = JSON.parse(localStorage.getItem('wcaSettingManual') ?? 'false');
+
+function digitsToMs(digits) {
+    if (!digits || digits === '0') return 0;
+    const padded = digits.padStart(3, '0');
+    const cs  = parseInt(padded.slice(-2), 10);
+    const sec = parseInt(padded.slice(-4, -2) || '0', 10);
+    const min = parseInt(padded.slice(0, -4) || '0', 10);
+    return (min * 60 + sec) * 1000 + cs * 10;
+}
+
+function formatManualPreview(digits) {
+    if (!digits) return '—';
+    const ms  = digitsToMs(digits);
+    const min = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000);
+    const cs  = Math.floor((ms % 1000) / 10);
+    if (min > 0) return `${min}:${String(sec).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+    return `${sec}.${String(cs).padStart(2,'0')}`;
+}
+
+function enterManualMode() {
+    manualModeActive = true;
+    localStorage.setItem('wcaSettingManual', 'true');
+    toggleManual.classList.add('on');
+    document.body.classList.add('manual-mode');
+    // Hide normal timer, show inline entry
+    timerEl.style.display = 'none';
+    manualInline.style.display = 'flex';
+    inlineInput.value = '';
+    inlinePreview.textContent = '—';
+    cancelSolve(); // stop any running timer
+    setTimeout(() => inlineInput.focus(), 50);
+}
+
+function exitManualMode() {
+    manualModeActive = false;
+    localStorage.setItem('wcaSettingManual', 'false');
+    toggleManual.classList.remove('on');
+    document.body.classList.remove('manual-mode');
+    timerEl.style.display = '';
+    manualInline.style.display = 'none';
+    timerEl.textContent = formatTime(0);
+}
+
+function syncManualToggleUI() {
+    if (manualModeActive) {
+        toggleManual.classList.add('on');
+        document.body.classList.add('manual-mode');
+        timerEl.style.display = 'none';
+        manualInline.style.display = 'flex';
+    } else {
+        toggleManual.classList.remove('on');
+    }
+}
+
+toggleManual.addEventListener('click', () => {
+    if (manualModeActive) exitManualMode();
+    else enterManualMode();
+    settingsModal.classList.remove('open');
+});
+
+// Live preview as user types
+inlineInput.addEventListener('input', () => {
+    inlineInput.value = inlineInput.value.replace(/\D/g, '');
+    const preview = formatManualPreview(inlineInput.value);
+    inlinePreview.textContent = preview || '—';
+    // tint preview green when valid
+    inlinePreview.style.color = inlineInput.value ? 'rgba(52,211,153,.7)' : 'rgba(255,255,255,.3)';
+});
+
+function submitManualTime() {
+    const digits = inlineInput.value;
+    if (!digits) return;
+    const ms = digitsToMs(digits);
+    if (ms <= 0) return;
+
+    // Flash animation on input
+    inlineInput.classList.remove('save-flash');
+    void inlineInput.offsetWidth; // reflow to restart animation
+    inlineInput.classList.add('save-flash');
+    setTimeout(() => inlineInput.classList.remove('save-flash'), 400);
+
+    addTime({ baseTime: ms, status: 'ok', event: eventSel.value });
+    generateScramble();
+
+    // Clear for next entry
+    inlineInput.value = '';
+    inlinePreview.textContent = '—';
+    inlinePreview.style.color = 'rgba(255,255,255,.3)';
+    inlineInput.focus();
+}
+
+inlineInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); submitManualTime(); }
+    if (e.key === 'Escape') { e.preventDefault(); exitManualMode(); }
+});
+
+// Keep focus on input when in manual mode and user clicks the panel
+document.getElementById('timer-container').addEventListener('click', () => {
+    if (manualModeActive) inlineInput.focus();
+});
+
+
+// ═══════════════════════════════════════════════════════════════
 //  TIMER
 // ═══════════════════════════════════════════════════════════════
 const timerEl  = document.getElementById('timer');
@@ -497,6 +859,18 @@ const timerCon = document.getElementById('timer-container');
 
 let times = [], timerState = 'idle', startTime = 0;
 let timerInterval, inspectionTimer, holdTimeout, inspectionPenalty = 0, audioCtx;
+
+// Expose mutable timer state + functions on window so the ESM BT module can reach them
+Object.defineProperties(window, {
+    timerState:        { get: () => timerState,        set: v => { timerState = v; },        configurable: true },
+    startTime:         { get: () => startTime,         set: v => { startTime = v; },          configurable: true },
+    inspectionTimer:   { get: () => inspectionTimer,   set: v => { inspectionTimer = v; },    configurable: true },
+    inspectionPenalty: { get: () => inspectionPenalty, set: v => { inspectionPenalty = v; },  configurable: true },
+});
+window.startTimer = () => startTimer();
+window.stopTimer  = (isDNF) => stopTimer(isDNF);
+// BT hardware timer reports exact ms — back-calculate startTime then stop normally
+window.btStopTimerWithMs = (elapsedMs) => { startTime = Date.now() - elapsedMs; stopTimer(); };
 
 function setTimerClass(cls) {
     timerEl.className = 'timer-display font-black tracking-tighter' + (cls ? ' ' + cls : '');
@@ -533,6 +907,12 @@ function speak(text) {
 }
 
 function startInspection() {
+    // If inspection is disabled, go straight to arming
+    if (!settings.inspectionEnabled) {
+        timerState = 'arming'; setTimerClass('timer-running');
+        holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
+        return;
+    }
     timerState = 'inspecting'; inspectionPenalty = 0;
     let sec = 0; timerEl.textContent = 15; setTimerClass('timer-inspecting');
     inspectionTimer = setInterval(() => {
@@ -586,41 +966,66 @@ function cancelSolve() {
     document.body.classList.remove('focus-mode');
 }
 
-// Keyboard
+// Keyboard — block spacebar when a modal is open or in manual mode
+function anyModalOpen() {
+    return manualModeActive ||
+           settingsModal.classList.contains('open') ||
+           !document.getElementById('info-modal').classList.contains('pointer-events-none');
+}
+
 window.addEventListener('keydown', e => {
+    if (anyModalOpen()) return; // don't interfere with modals
     if (e.code === 'Escape' && ['inspecting','arming','ready'].includes(timerState)) { e.preventDefault(); cancelSolve(); return; }
     if (timerState === 'timing') { e.preventDefault(); stopTimer(); return; }
     if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
-        if (timerState === 'idle' || timerState === 'stopped') { startInspection(); }
-        else if (timerState === 'inspecting') {
+        if (timerState === 'idle' || timerState === 'stopped') {
+            startInspection();
+        } else if (timerState === 'inspecting') {
             timerState = 'arming'; setTimerClass('timer-running');
             holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
         }
     }
 });
 window.addEventListener('keyup', e => {
+    if (anyModalOpen()) return;
     if (e.code === 'Space') {
         e.preventDefault(); clearTimeout(holdTimeout);
         if (timerState === 'ready') { clearInterval(inspectionTimer); inspectionTimer = null; startTimer(); }
-        else if (timerState === 'arming') { timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting'); }
+        else if (timerState === 'arming') {
+            if (!settings.inspectionEnabled) {
+                // No inspection: just go back to idle
+                timerState = 'stopped'; setTimerClass(''); timerEl.textContent = formatTime(0);
+            } else {
+                timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
+            }
+        }
     }
 });
 
 // Touch
 timerCon.addEventListener('touchstart', e => {
+    if (anyModalOpen()) return;
     if (e.touches.length > 1) return; e.preventDefault();
     if (timerState === 'timing') { stopTimer(); return; }
-    if (timerState === 'idle' || timerState === 'stopped') { startInspection(); }
-    else if (timerState === 'inspecting') {
+    if (timerState === 'idle' || timerState === 'stopped') {
+        startInspection();
+    } else if (timerState === 'inspecting') {
         timerState = 'arming'; setTimerClass('timer-running');
         holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
     }
 }, { passive: false });
 timerCon.addEventListener('touchend', e => {
+    if (anyModalOpen()) return;
     e.preventDefault(); clearTimeout(holdTimeout);
     if (timerState === 'ready') { clearInterval(inspectionTimer); inspectionTimer = null; startTimer(); }
-    else if (timerState === 'arming') { timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting'); }
+    else if (timerState === 'arming') {
+        if (!settings.inspectionEnabled) {
+            timerState = 'stopped'; setTimerClass(''); timerEl.textContent = formatTime(0);
+        } else {
+            timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
+        }
+    }
 }, { passive: false });
 
 
@@ -770,6 +1175,7 @@ document.getElementById('close-modal').addEventListener('click', () => {
 
 // Boot
 loadTimes(); renderHistory(); updateStats(); generateScramble();
+syncManualToggleUI();
 if (!localStorage.getItem('cubeTimerVisited')) {
     setTimeout(() => {
         const m = document.getElementById('info-modal');
@@ -779,6 +1185,183 @@ if (!localStorage.getItem('cubeTimerVisited')) {
 }
 setTimeout(() => document.getElementById('contact-me-box').classList.add('visible'), 3000);
 
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CUBING.JS BLUETOOTH — ESM module (separate script tag required)
+════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import { connectSmartPuzzle } from "https://cdn.cubing.net/v0/js/cubing/bluetooth";
+
+// ── UI refs ──────────────────────────────────────────────────
+const btConnectBtn    = document.getElementById('bt-connect-btn');
+const btStatusBar     = document.getElementById('bt-status-bar');
+const btDot           = document.getElementById('bt-dot');
+const btStatusText    = document.getElementById('bt-status-text');
+const btDisconnectBtn = document.getElementById('bt-disconnect-btn');
+const btInfoRow       = document.getElementById('bt-info-row');
+const btDeviceName    = document.getElementById('bt-device-name');
+
+let btPuzzle = null;
+
+// ── UI helpers ───────────────────────────────────────────────
+function setBtDot(state)  { btDot.className = 'bt-dot' + (state ? ' ' + state : ''); }
+function setBtLabel(text) { btStatusText.textContent = text; }
+
+function styleConnectBtn(mode) {
+    const styles = {
+        idle:       { bg: 'rgba(96,165,250,.15)',  border: 'rgba(96,165,250,.4)',  color: '#93c5fd',  text: 'Connect'     },
+        scanning:   { bg: 'rgba(251,191,36,.12)',  border: 'rgba(251,191,36,.4)',  color: '#fcd34d',  text: 'Scanning…'   },
+        disconnect: { bg: 'rgba(248,113,113,.15)', border: 'rgba(248,113,113,.4)', color: '#fca5a5',  text: 'Disconnect'  },
+    };
+    const s = styles[mode] || styles.idle;
+    btConnectBtn.textContent = s.text;
+    btConnectBtn.style.cssText = `background:${s.bg};border:1px solid ${s.border};color:${s.color};cursor:pointer;transition:background .2s;white-space:nowrap;`;
+}
+
+function onConnected(name, isTimer) {
+    setBtDot('connected');
+    setBtLabel(`${name}`);
+    btStatusBar.classList.add('show');
+    btDisconnectBtn.style.display = 'inline';
+    styleConnectBtn('disconnect');
+    btInfoRow.style.display = 'block';
+    btDeviceName.textContent = isTimer ? '📟 Hardware Timer mode' : '🧩 Smart Cube mode — first move starts timer';
+}
+
+function onDisconnected() {
+    setBtDot(''); setBtLabel('Disconnected');
+    btStatusBar.classList.remove('show');
+    btDisconnectBtn.style.display = 'none';
+    styleConnectBtn('idle');
+    btInfoRow.style.display = 'none';
+    btPuzzle = null;
+}
+
+function onError(msg) {
+    setBtDot('error'); setBtLabel(msg);
+    btStatusBar.classList.add('show');
+    setTimeout(() => { if (!btPuzzle) { btStatusBar.classList.remove('show'); styleConnectBtn('idle'); } }, 3500);
+}
+
+// ── Disconnect ───────────────────────────────────────────────
+function disconnectBt() {
+    if (btPuzzle) { try { btPuzzle.disconnect(); } catch (_) {} }
+    onDisconnected();
+}
+btDisconnectBtn.addEventListener('click', disconnectBt);
+
+// ── Helpers that call the classic-script timer functions ─────
+function btStartTimer() {
+    if (window.timerState !== 'idle' && window.timerState !== 'stopped') return;
+    clearInterval(window.inspectionTimer);
+    window.inspectionTimer   = null;
+    window.inspectionPenalty = 0;
+    window.startTimer();
+}
+
+function btStop(elapsedMs = null) {
+    if (window.timerState !== 'timing') return;
+    if (elapsedMs != null) window.btStopTimerWithMs(elapsedMs);
+    else window.stopTimer();
+}
+
+// ── Move label flash ─────────────────────────────────────────
+let moveFlashTimeout = null;
+function flashMove(name, move) {
+    setBtLabel(`${name}  ›  ${move}`);
+    clearTimeout(moveFlashTimeout);
+    moveFlashTimeout = setTimeout(() => setBtLabel(name), 700);
+}
+
+// ── Connect ──────────────────────────────────────────────────
+async function connectBt() {
+    if (btPuzzle) { disconnectBt(); return; }
+
+    if (!navigator.bluetooth) {
+        alert('Web Bluetooth is not supported in this browser.\nUse Chrome or Edge on desktop or Android.');
+        return;
+    }
+
+    setBtDot('connecting'); setBtLabel('Scanning for device…');
+    btStatusBar.classList.add('show');
+    styleConnectBtn('scanning');
+    btConnectBtn.disabled = true;
+
+    try {
+        btPuzzle = await connectSmartPuzzle();
+        btConnectBtn.disabled = false;
+
+        const rawName  = typeof btPuzzle.name === 'function' ? btPuzzle.name() : (btPuzzle.name ?? 'Bluetooth Device');
+        const name     = rawName || 'Bluetooth Device';
+        const isTimer  = /timer/i.test(name);
+
+        onConnected(name, isTimer);
+
+        if (isTimer) {
+            // ── HARDWARE TIMER (e.g. GAN Smart Timer) ──────────────
+            // The GAN Smart Timer fires CustomEvents on the puzzle object
+            // for its state machine: hands-on → hands-off → running → stopped.
+            btPuzzle.addEventListener('timerStart', () => btStartTimer());
+
+            btPuzzle.addEventListener('timerStop', (e) => {
+                // GAN firmware may report elapsed ms in event detail
+                const ms = e?.detail?.elapsedMs ?? e?.detail?.time ?? null;
+                btStop(ms);
+            });
+
+            // Some firmware versions encode timer state as special alg-leaf moves
+            btPuzzle.addAlgLeafListener?.((e) => {
+                const mv = e?.latestAlgLeaf?.toString() ?? '';
+                if      (mv === 'BT_TIMER_START') btStartTimer();
+                else if (mv === 'BT_TIMER_STOP')  btStop();
+            });
+
+        } else {
+            // ── SMART CUBE (e.g. GAN 356i, GAN 11, GoCube, MoYu AI) ─
+            // First physical move → start timer.
+            // getPattern().isSolved() → stop timer.
+            btPuzzle.addAlgLeafListener((e) => {
+                const mv = e?.latestAlgLeaf?.toString() ?? '';
+                if (!mv) return;
+
+                flashMove(name, mv);
+
+                // Ignore moves during inspection — user may be orienting the cube
+                if (window.timerState === 'inspecting') return;
+
+                // First move after idle/stopped → start
+                if (window.timerState === 'idle' || window.timerState === 'stopped') {
+                    btStartTimer();
+                    return;
+                }
+
+                // While running, check for solved state
+                if (window.timerState === 'timing' && btPuzzle.getPattern) {
+                    btPuzzle.getPattern()
+                        .then(pat => { if (pat?.isSolved?.()) btStop(); })
+                        .catch(() => {});
+                }
+            });
+        }
+
+        // Graceful disconnect detection (GATT server closes)
+        btPuzzle.addEventListener('disconnect', () => onDisconnected());
+
+    } catch (err) {
+        btConnectBtn.disabled = false;
+        const cancelled = err?.name === 'NotFoundError' || /cancel|user/i.test(err?.message ?? '');
+        if (cancelled) {
+            // User closed the browser device picker — silent reset
+            onDisconnected();
+        } else {
+            onError('Connection failed');
+            console.warn('[BT] connect error:', err);
+        }
+    }
+}
+
+btConnectBtn.addEventListener('click', connectBt);
 </script>
 </body>
 </html>
