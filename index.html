@@ -872,6 +872,18 @@ window.stopTimer  = (isDNF) => stopTimer(isDNF);
 // BT hardware timer reports exact ms — back-calculate startTime then stop normally
 window.btStopTimerWithMs = (elapsedMs) => { startTime = Date.now() - elapsedMs; stopTimer(); };
 
+// BT-specific start/stop that bypass keyboard guards entirely
+window.btStart = function() {
+    if (timerState !== 'idle' && timerState !== 'stopped') return;
+    clearInterval(inspectionTimer); inspectionTimer = null; inspectionPenalty = 0;
+    startTimer();
+};
+window.btStop = function(exactMs) {
+    if (timerState !== 'timing') return;
+    if (exactMs != null) { startTime = Date.now() - exactMs; }
+    stopTimer();
+};
+
 function setTimerClass(cls) {
     timerEl.className = 'timer-display font-black tracking-tighter' + (cls ? ' ' + cls : '');
 }
@@ -1245,17 +1257,11 @@ function showError(msg) {
 }
 
 function btStart() {
-    if (window.timerState !== 'idle' && window.timerState !== 'stopped') return;
-    clearInterval(window.inspectionTimer);
-    window.inspectionTimer = null;
-    window.inspectionPenalty = 0;
-    window.startTimer();
+    window.btStart();
 }
 
 function btStop(exactMs) {
-    if (window.timerState !== 'timing') return;
-    if (exactMs != null) window.btStopTimerWithMs(exactMs);
-    else window.stopTimer();
+    window.btStop(exactMs != null ? exactMs : undefined);
 }
 
 function doDisconnect() {
@@ -1272,11 +1278,19 @@ async function doConnectTimer() {
 
     btSub = conn.events$.subscribe({
         next(ev) {
+            console.log('[GAN Timer] state:', GanTimerState[ev.state], ev);
             switch (ev.state) {
                 case GanTimerState.HANDS_ON:  setBtLabel('Hands on...'); break;
                 case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
                 case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
-                case GanTimerState.STOPPED:   setBtLabel('GAN Smart Timer'); btStop(ev.recordedTime); break;
+                case GanTimerState.STOPPED: {
+                    // recordedTime is in milliseconds per gan-web-bluetooth docs
+                    const ms = typeof ev.recordedTime === 'number' ? ev.recordedTime : null;
+                    console.log('[GAN Timer] STOPPED, recordedTime ms:', ms);
+                    setBtLabel('GAN Smart Timer');
+                    btStop(ms);
+                    break;
+                }
                 case GanTimerState.IDLE:
                 case GanTimerState.FINISHED:  setBtLabel('GAN Smart Timer'); break;
                 case GanTimerState.DISCONNECT: showDisconnected(); break;
@@ -1296,6 +1310,7 @@ async function doConnectCube() {
 
     btSub = conn.events$.subscribe({
         next(ev) {
+            console.log('[GAN Cube] event:', ev.type, ev);
             if (ev.type === 'MOVE') {
                 setBtLabel(name + '  ' + ev.move);
                 clearTimeout(flashTimeout);
