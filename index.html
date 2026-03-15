@@ -1188,12 +1188,12 @@ setTimeout(() => document.getElementById('contact-me-box').classList.add('visibl
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     CUBING.JS BLUETOOTH — ESM module (separate script tag required)
+     GAN BLUETOOTH — gan-web-bluetooth via esm.sh (same lib as csTimer)
+     Supports: GAN Smart Timer, GAN Halo Timer, GAN Smart Cubes
 ════════════════════════════════════════════════════════════════ -->
 <script type="module">
-import { connectSmartPuzzle } from "https://cdn.cubing.net/v0/js/cubing/bluetooth";
+import { connectGanTimer, connectGanCube, GanTimerState } from "https://esm.sh/gan-web-bluetooth@3";
 
-// ── UI refs ──────────────────────────────────────────────────
 const btConnectBtn    = document.getElementById('bt-connect-btn');
 const btStatusBar     = document.getElementById('bt-status-bar');
 const btDot           = document.getElementById('bt-dot');
@@ -1202,166 +1202,179 @@ const btDisconnectBtn = document.getElementById('bt-disconnect-btn');
 const btInfoRow       = document.getElementById('bt-info-row');
 const btDeviceName    = document.getElementById('bt-device-name');
 
-let btPuzzle = null;
+let btConn = null, btSub = null, btDeviceType = null;
 
-// ── UI helpers ───────────────────────────────────────────────
-function setBtDot(state)  { btDot.className = 'bt-dot' + (state ? ' ' + state : ''); }
-function setBtLabel(text) { btStatusText.textContent = text; }
+function setBtDot(cls) { btDot.className = 'bt-dot' + (cls ? ' ' + cls : ''); }
+function setBtLabel(txt) { btStatusText.textContent = txt; }
 
-function styleConnectBtn(mode) {
-    const styles = {
-        idle:       { bg: 'rgba(96,165,250,.15)',  border: 'rgba(96,165,250,.4)',  color: '#93c5fd',  text: 'Connect'     },
-        scanning:   { bg: 'rgba(251,191,36,.12)',  border: 'rgba(251,191,36,.4)',  color: '#fcd34d',  text: 'Scanning…'   },
-        disconnect: { bg: 'rgba(248,113,113,.15)', border: 'rgba(248,113,113,.4)', color: '#fca5a5',  text: 'Disconnect'  },
+function styleBtn(mode) {
+    const S = {
+        idle:       { bg:'rgba(96,165,250,.15)',  border:'rgba(96,165,250,.4)',  color:'#93c5fd', text:'Connect'    },
+        scanning:   { bg:'rgba(251,191,36,.12)',  border:'rgba(251,191,36,.4)',  color:'#fcd34d', text:'Scanning...'  },
+        disconnect: { bg:'rgba(248,113,113,.15)', border:'rgba(248,113,113,.4)', color:'#fca5a5', text:'Disconnect' },
     };
-    const s = styles[mode] || styles.idle;
-    btConnectBtn.textContent = s.text;
-    btConnectBtn.style.cssText = `background:${s.bg};border:1px solid ${s.border};color:${s.color};cursor:pointer;transition:background .2s;white-space:nowrap;`;
+    const s = S[mode] || S.idle;
+    btConnectBtn.textContent   = s.text;
+    btConnectBtn.style.cssText = `background:${s.bg};border:1px solid ${s.border};color:${s.color};cursor:pointer;transition:background .2s;white-space:nowrap;border-radius:.5rem;padding:.4rem .9rem;font-size:.75rem;font-weight:700;`;
 }
 
-function onConnected(name, isTimer) {
-    setBtDot('connected');
-    setBtLabel(`${name}`);
+function showConnected(name, type) {
+    setBtDot('connected'); setBtLabel(name);
     btStatusBar.classList.add('show');
     btDisconnectBtn.style.display = 'inline';
-    styleConnectBtn('disconnect');
+    styleBtn('disconnect');
     btInfoRow.style.display = 'block';
-    btDeviceName.textContent = isTimer ? '📟 Hardware Timer mode' : '🧩 Smart Cube mode — first move starts timer';
+    btDeviceName.textContent = type === 'timer'
+        ? 'Hardware Timer mode — hands-on start, lift to run, touch to stop'
+        : 'Smart Cube mode — first move starts, solved state stops';
 }
 
-function onDisconnected() {
+function showDisconnected() {
     setBtDot(''); setBtLabel('Disconnected');
     btStatusBar.classList.remove('show');
     btDisconnectBtn.style.display = 'none';
-    styleConnectBtn('idle');
+    styleBtn('idle');
     btInfoRow.style.display = 'none';
-    btPuzzle = null;
+    btConn = null; btSub = null; btDeviceType = null;
 }
 
-function onError(msg) {
+function showError(msg) {
     setBtDot('error'); setBtLabel(msg);
     btStatusBar.classList.add('show');
-    setTimeout(() => { if (!btPuzzle) { btStatusBar.classList.remove('show'); styleConnectBtn('idle'); } }, 3500);
+    setTimeout(() => { if (!btConn) { btStatusBar.classList.remove('show'); styleBtn('idle'); } }, 3500);
 }
 
-// ── Disconnect ───────────────────────────────────────────────
-function disconnectBt() {
-    if (btPuzzle) { try { btPuzzle.disconnect(); } catch (_) {} }
-    onDisconnected();
-}
-btDisconnectBtn.addEventListener('click', disconnectBt);
-
-// ── Helpers that call the classic-script timer functions ─────
-function btStartTimer() {
+function btStart() {
     if (window.timerState !== 'idle' && window.timerState !== 'stopped') return;
     clearInterval(window.inspectionTimer);
-    window.inspectionTimer   = null;
+    window.inspectionTimer = null;
     window.inspectionPenalty = 0;
     window.startTimer();
 }
 
-function btStop(elapsedMs = null) {
+function btStop(exactMs) {
     if (window.timerState !== 'timing') return;
-    if (elapsedMs != null) window.btStopTimerWithMs(elapsedMs);
+    if (exactMs != null) window.btStopTimerWithMs(exactMs);
     else window.stopTimer();
 }
 
-// ── Move label flash ─────────────────────────────────────────
-let moveFlashTimeout = null;
-function flashMove(name, move) {
-    setBtLabel(`${name}  ›  ${move}`);
-    clearTimeout(moveFlashTimeout);
-    moveFlashTimeout = setTimeout(() => setBtLabel(name), 700);
+function doDisconnect() {
+    if (btSub)  { try { btSub.unsubscribe();   } catch(_) {} }
+    if (btConn) { try { btConn.disconnect?.();  } catch(_) {} }
+    showDisconnected();
+}
+btDisconnectBtn.addEventListener('click', doDisconnect);
+
+async function doConnectTimer() {
+    const conn = await connectGanTimer();
+    btConn = conn; btDeviceType = 'timer';
+    showConnected('GAN Smart Timer', 'timer');
+
+    btSub = conn.events$.subscribe({
+        next(ev) {
+            switch (ev.state) {
+                case GanTimerState.HANDS_ON:  setBtLabel('Hands on...'); break;
+                case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
+                case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
+                case GanTimerState.STOPPED:   setBtLabel('GAN Smart Timer'); btStop(ev.recordedTime); break;
+                case GanTimerState.IDLE:
+                case GanTimerState.FINISHED:  setBtLabel('GAN Smart Timer'); break;
+                case GanTimerState.DISCONNECT: showDisconnected(); break;
+            }
+        },
+        error(e) { console.warn('[BT Timer]', e); showDisconnected(); }
+    });
 }
 
-// ── Connect ──────────────────────────────────────────────────
-async function connectBt() {
-    if (btPuzzle) { disconnectBt(); return; }
+async function doConnectCube() {
+    const conn = await connectGanCube();
+    btConn = conn; btDeviceType = 'cube';
+    const name = conn.deviceName || conn.device?.name || 'GAN Smart Cube';
+    showConnected(name, 'cube');
 
+    let flashTimeout = null;
+
+    btSub = conn.events$.subscribe({
+        next(ev) {
+            if (ev.type === 'MOVE') {
+                setBtLabel(name + '  ' + ev.move);
+                clearTimeout(flashTimeout);
+                flashTimeout = setTimeout(() => setBtLabel(name), 700);
+                if (window.timerState === 'inspecting') return;
+                if (window.timerState === 'idle' || window.timerState === 'stopped') { btStart(); return; }
+            }
+            if (ev.type === 'FACELETS' && window.timerState === 'timing') {
+                if (isGanSolved(ev.facelets)) btStop(null);
+            }
+        },
+        error(e) { console.warn('[BT Cube]', e); showDisconnected(); }
+    });
+
+    // Poll facelets every 500ms during solve to detect solved state
+    let pollInterval = setInterval(() => {
+        if (!btConn) { clearInterval(pollInterval); return; }
+        if (window.timerState === 'timing') {
+            conn.sendCubeCommand?.({ type: 'REQUEST_FACELETS' }).catch(() => {});
+        }
+    }, 500);
+}
+
+// Facelets string for solved 3x3 (URFDLB order, 9 stickers each)
+const SOLVED = 'UUUUUUUUURRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+function isGanSolved(f) {
+    if (!f) return false;
+    const s = Array.isArray(f) ? (f.flat ? f.flat() : f).join('') : f;
+    return s.toUpperCase() === SOLVED;
+}
+
+async function connectBt() {
+    if (btConn) { doDisconnect(); return; }
     if (!navigator.bluetooth) {
-        alert('Web Bluetooth is not supported in this browser.\nUse Chrome or Edge on desktop or Android.');
+        alert('Web Bluetooth not supported.\nUse Chrome or Edge (desktop/Android).\nPage must be on HTTPS or localhost.');
         return;
     }
-
-    setBtDot('connecting'); setBtLabel('Scanning for device…');
-    btStatusBar.classList.add('show');
-    styleConnectBtn('scanning');
-    btConnectBtn.disabled = true;
+    setBtDot('connecting'); setBtLabel('Scanning...'); btStatusBar.classList.add('show');
+    styleBtn('scanning'); btConnectBtn.disabled = true;
 
     try {
-        btPuzzle = await connectSmartPuzzle();
-        btConnectBtn.disabled = false;
-
-        const rawName  = typeof btPuzzle.name === 'function' ? btPuzzle.name() : (btPuzzle.name ?? 'Bluetooth Device');
-        const name     = rawName || 'Bluetooth Device';
-        const isTimer  = /timer/i.test(name);
-
-        onConnected(name, isTimer);
-
-        if (isTimer) {
-            // ── HARDWARE TIMER (e.g. GAN Smart Timer) ──────────────
-            // The GAN Smart Timer fires CustomEvents on the puzzle object
-            // for its state machine: hands-on → hands-off → running → stopped.
-            btPuzzle.addEventListener('timerStart', () => btStartTimer());
-
-            btPuzzle.addEventListener('timerStop', (e) => {
-                // GAN firmware may report elapsed ms in event detail
-                const ms = e?.detail?.elapsedMs ?? e?.detail?.time ?? null;
-                btStop(ms);
-            });
-
-            // Some firmware versions encode timer state as special alg-leaf moves
-            btPuzzle.addAlgLeafListener?.((e) => {
-                const mv = e?.latestAlgLeaf?.toString() ?? '';
-                if      (mv === 'BT_TIMER_START') btStartTimer();
-                else if (mv === 'BT_TIMER_STOP')  btStop();
-            });
-
-        } else {
-            // ── SMART CUBE (e.g. GAN 356i, GAN 11, GoCube, MoYu AI) ─
-            // First physical move → start timer.
-            // getPattern().isSolved() → stop timer.
-            btPuzzle.addAlgLeafListener((e) => {
-                const mv = e?.latestAlgLeaf?.toString() ?? '';
-                if (!mv) return;
-
-                flashMove(name, mv);
-
-                // Ignore moves during inspection — user may be orienting the cube
-                if (window.timerState === 'inspecting') return;
-
-                // First move after idle/stopped → start
-                if (window.timerState === 'idle' || window.timerState === 'stopped') {
-                    btStartTimer();
-                    return;
-                }
-
-                // While running, check for solved state
-                if (window.timerState === 'timing' && btPuzzle.getPattern) {
-                    btPuzzle.getPattern()
-                        .then(pat => { if (pat?.isSolved?.()) btStop(); })
-                        .catch(() => {});
-                }
-            });
-        }
-
-        // Graceful disconnect detection (GATT server closes)
-        btPuzzle.addEventListener('disconnect', () => onDisconnected());
-
+        const typeRadio = document.querySelector('input[name="bt-type"]:checked');
+        if (typeRadio?.value === 'cube') await doConnectCube();
+        else await doConnectTimer();
     } catch (err) {
         btConnectBtn.disabled = false;
-        const cancelled = err?.name === 'NotFoundError' || /cancel|user/i.test(err?.message ?? '');
-        if (cancelled) {
-            // User closed the browser device picker — silent reset
-            onDisconnected();
+        if (err?.name === 'NotFoundError' || /cancel/i.test(err?.message ?? '')) {
+            showDisconnected();
         } else {
-            onError('Connection failed');
+            showError('Connection failed');
             console.warn('[BT] connect error:', err);
         }
+        return;
     }
+    btConnectBtn.disabled = false;
 }
 
 btConnectBtn.addEventListener('click', connectBt);
+
+// Inject Timer/Cube radio selector into settings modal
+(function() {
+    const settingsBox = document.querySelector('#settings-modal .modal-box');
+    const btRowRef = document.getElementById('bt-info-row');
+    const typeRow = document.createElement('div');
+    typeRow.style.cssText = 'display:flex;gap:.75rem;align-items:center;padding:.35rem 0 0;flex-wrap:wrap;';
+    typeRow.innerHTML = `
+        <span style="font-size:.72rem;color:rgba(255,255,255,.35);">Device type:</span>
+        <label style="font-size:.78rem;color:#d1d5db;display:flex;align-items:center;gap:.3rem;cursor:pointer;">
+            <input type="radio" id="bt-type-timer" name="bt-type" value="timer" checked style="accent-color:#67E8F9;"> Smart Timer
+        </label>
+        <label style="font-size:.78rem;color:#d1d5db;display:flex;align-items:center;gap:.3rem;cursor:pointer;">
+            <input type="radio" id="bt-type-cube" name="bt-type" value="cube" style="accent-color:#67E8F9;"> Smart Cube
+        </label>`;
+    settingsBox.insertBefore(typeRow, btRowRef);
+    document.querySelectorAll('input[name="bt-type"]').forEach(r => {
+        r.addEventListener('change', () => { if (btConn) doDisconnect(); });
+    });
+})();
+
 </script>
 </body>
 </html>
