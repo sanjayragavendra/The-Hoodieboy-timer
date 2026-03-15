@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy Timer</title>
+    <title>The Hoodieboy Tccimer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
@@ -872,29 +872,41 @@ window.stopTimer  = (isDNF) => stopTimer(isDNF);
 // BT hardware timer reports exact ms — back-calculate startTime then stop normally
 window.btStopTimerWithMs = (elapsedMs) => { startTime = Date.now() - elapsedMs; stopTimer(); };
 
+// BT active flag — set by ESM module, disables keyboard/touch timer control
+window.btConnected = false;
+
 // BT-specific start/stop that bypass keyboard guards entirely
 window.btStart = function() {
     console.log('[btStart] timerState=', timerState);
     if (timerState !== 'idle' && timerState !== 'stopped') return;
     clearInterval(inspectionTimer); inspectionTimer = null; inspectionPenalty = 0;
-    startTimer();
-    console.log('[btStart] after startTimer, timerState=', timerState);
+    // Start timer without focus-mode (BT doesn't need touch-to-stop)
+    startTime = Date.now(); timerState = 'timing'; setTimerClass('timer-running');
+    timerInterval = setInterval(() => {
+        const e = Date.now() - startTime;
+        const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000);
+        timerEl.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
+    }, 100);
+    console.log('[btStart] timer started, timerState=', timerState);
 };
 window.btStop = function(exactMs) {
-    console.log('[btStop] timerState=', timerState, 'exactMs=', exactMs);
-    // Don't gate on timerState — force stop regardless so we never miss a time
+    console.log('[btStop] called, timerState=', timerState, 'exactMs=', exactMs);
     clearInterval(timerInterval);
     clearInterval(inspectionTimer); inspectionTimer = null;
-    const final = (exactMs != null) ? exactMs : (timerState === 'timing' ? Date.now() - startTime : 0);
-    if (final <= 0) { console.warn('[btStop] final<=0, skipping'); return; }
+    const final = (exactMs != null && exactMs > 0)
+        ? exactMs
+        : (startTime > 0 ? Date.now() - startTime : 0);
+    console.log('[btStop] final=', final);
+    if (final <= 0) { console.warn('[btStop] final<=0, aborting'); return; }
     timerState = 'stopped';
     setTimerClass('');
     timerEl.textContent = formatTime(final, 'ok');
     document.body.classList.remove('focus-mode');
-    const event = eventSel.value;
-    console.log('[btStop] saving time', final, 'ms to event', event);
-    addTime({ baseTime: final, status: 'ok', event });
+    const ev = eventSel.value;
+    console.log('[btStop] adding time', final, 'to event', ev);
+    addTime({ baseTime: final, status: 'ok', event: ev });
     generateScramble();
+    console.log('[btStop] done');
 };
 
 function setTimerClass(cls) {
@@ -999,7 +1011,8 @@ function anyModalOpen() {
 }
 
 window.addEventListener('keydown', e => {
-    if (anyModalOpen()) return; // don't interfere with modals
+    if (anyModalOpen()) return;
+    if (window.btConnected) return; // BT owns the timer
     if (e.code === 'Escape' && ['inspecting','arming','ready'].includes(timerState)) { e.preventDefault(); cancelSolve(); return; }
     if (timerState === 'timing') { e.preventDefault(); stopTimer(); return; }
     if (e.code === 'Space' && !e.repeat) {
@@ -1031,6 +1044,7 @@ window.addEventListener('keyup', e => {
 // Touch
 timerCon.addEventListener('touchstart', e => {
     if (anyModalOpen()) return;
+    if (window.btConnected) return; // BT owns the timer
     if (e.touches.length > 1) return; e.preventDefault();
     if (timerState === 'timing') { stopTimer(); return; }
     if (timerState === 'idle' || timerState === 'stopped') {
@@ -1244,6 +1258,7 @@ function styleBtn(mode) {
 }
 
 function showConnected(name, type) {
+    window.btConnected = true;
     setBtDot('connected'); setBtLabel(name);
     btStatusBar.classList.add('show');
     btDisconnectBtn.style.display = 'inline';
@@ -1255,6 +1270,7 @@ function showConnected(name, type) {
 }
 
 function showDisconnected() {
+    window.btConnected = false;
     setBtDot(''); setBtLabel('Disconnected');
     btStatusBar.classList.remove('show');
     btDisconnectBtn.style.display = 'none';
