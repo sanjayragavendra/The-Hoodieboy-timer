@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy Tccimer</title>
+    <title>The Hoodieboy Timer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
@@ -883,16 +883,17 @@ window.btStart = function() {
     // Start timer without focus-mode (BT doesn't need touch-to-stop)
     startTime = Date.now(); timerState = 'timing'; setTimerClass('timer-running');
     timerInterval = setInterval(() => {
-        const e = Date.now() - startTime;
-        const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000);
-        timerEl.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
-    }, 100);
+        const e = Math.floor((Date.now() - startTime) / 10) * 10;
+        const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000), c = Math.floor((e % 1000) / 10);
+        timerEl.textContent = (m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s) + '.' + String(c).padStart(2,'0');
+    }, 30);
     console.log('[btStart] timer started, timerState=', timerState);
 };
 window.btStop = function(exactMs) {
-    console.log('[btStop] called, timerState=', timerState, 'exactMs=', exactMs);
+    console.log('[btStop] called, timerState=', timerState, 'ms=', exactMs);
     clearInterval(timerInterval);
     clearInterval(inspectionTimer); inspectionTimer = null;
+    // Use passed ms (our own clock); fallback to elapsed if somehow null
     const final = (exactMs != null && exactMs > 0)
         ? exactMs
         : (startTime > 0 ? Date.now() - startTime : 0);
@@ -900,13 +901,14 @@ window.btStop = function(exactMs) {
     if (final <= 0) { console.warn('[btStop] final<=0, aborting'); return; }
     timerState = 'stopped';
     setTimerClass('');
-    timerEl.textContent = formatTime(final, 'ok');
+    // Floor to centiseconds so display and saved value match exactly
+    const finalFloored = Math.floor(final / 10) * 10;
+    timerEl.textContent = formatTime(finalFloored, 'ok');
     document.body.classList.remove('focus-mode');
     const ev = eventSel.value;
-    console.log('[btStop] adding time', final, 'to event', ev);
-    addTime({ baseTime: final, status: 'ok', event: ev });
+    addTime({ baseTime: finalFloored, status: 'ok', event: ev });
     generateScramble();
-    console.log('[btStop] done');
+    console.log('[btStop] saved', finalFloored, 'ms');
 };
 
 function setTimerClass(cls) {
@@ -1315,9 +1317,11 @@ async function doConnectTimer() {
                 case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
                 case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
                 case GanTimerState.STOPPED: {
-                    // recordedTime is in milliseconds per gan-web-bluetooth docs
-                    const ms = typeof ev.recordedTime === 'number' && ev.recordedTime > 0 ? ev.recordedTime : null;
-                    console.log('[GAN Timer] STOPPED, full event:', JSON.stringify(ev), 'using ms:', ms);
+                    // Use our own clock (Date.now() - startTime) so the saved time
+                    // exactly matches what was shown on the display, not the hardware's
+                    // recordedTime which can differ by ~30-50ms due to BLE latency.
+                    const ms = startTime > 0 ? Date.now() - startTime : null;
+                    console.log('[GAN Timer] STOPPED, display ms:', ms, 'hardware recordedTime:', ev.recordedTime);
                     setBtLabel('GAN Smart Timer');
                     btStop(ms);
                     break;
