@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hoodieboy Tiaamer</title>
+    <title>The Hoodieboy Timer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
@@ -1296,17 +1296,21 @@ async function doConnectTimer() {
             switch (ev.state) {
                 case GanTimerState.HANDS_ON:  setBtLabel('Hands on...'); break;
                 case GanTimerState.GET_SET:   setBtLabel('Get set...'); break;
-                case GanTimerState.RUNNING:   setBtLabel('Running...'); btStart(); break;
-                case GanTimerState.STOPPED: {
-                    // recordedTime is the hardware's exact measured time in ms — this IS the ground truth.
-                    // Use it for BOTH the saved value and the frozen display so they always match.
-                    const ms = (typeof ev.recordedTime === 'number' && ev.recordedTime > 0)
-                        ? ev.recordedTime
-                        : (startTime > 0 ? Date.now() - startTime : 0);
-                    setBtLabel('GAN Smart Timer');
-                    btStop(ms);
+                case GanTimerState.RUNNING:
+                    setBtLabel('Running...');
+                    btStart();
                     break;
-                }
+
+                case GanTimerState.STOPPED:
+                    setBtLabel('GAN Smart Timer');
+                    // getRecordedTimes().displayTime is exactly what the GAN screen shows
+                    conn.getRecordedTimes().then(rec => {
+                        btStop(rec.displayTime);
+                    }).catch(() => {
+                        // Fallback to recordedTime from event if API call fails
+                        btStop(ev.recordedTime > 0 ? ev.recordedTime : null);
+                    });
+                    break;
                 case GanTimerState.IDLE:
                 case GanTimerState.FINISHED:  setBtLabel('GAN Smart Timer'); break;
                 case GanTimerState.DISCONNECT: showDisconnected(); break;
