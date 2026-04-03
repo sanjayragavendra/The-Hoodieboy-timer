@@ -1,19 +1,19 @@
-<!-- ULTRA GRADIENT HEADER -->
+<!-- ULTRA HEADER -->
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=venom&color=0:00F5FF,100:7F00FF&height=260&section=header&text=The%20Hoodie%20Boy%20Timer&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=40"/>
 </p>
 
-<!-- CYBER TYPING -->
+<!-- TYPING ANIMATION -->
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=28&duration=2500&color=00F5FF&center=true&vCenter=true&width=900&lines=High+Performance+Speedcubing+Timer;Twisty+Player+API+Powered;Precision+%7C+Focus+%7C+Performance"/>
+  <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=28&duration=2500&color=00F5FF&center=true&vCenter=true&width=900&lines=Speedcubing+Timer;Twisty+Player+Powered;Precision+%7C+Focus+%7C+Performance"/>
 </p>
 
-<!-- GLOW LINE -->
+<!-- GLOW DIVIDER -->
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/74038190/212284129-6c4b6f6e-41e4-4c0d-9e92-1a65c8a88b6f.gif" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=3"/>
 </p>
 
 ---
@@ -24,14 +24,16 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 ---
 
-## Visual Layer
+## Cube Visual Layer
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/platane/snk/output/github-contribution-grid-snake-dark.svg" width="100%"/>
+  <img src="https://cube.rider.biz/visualcube.php?fmt=svg&size=200&case=R%20U%20R'%20U'" />
 </p>
 
+<!-- GRADIENT DIVIDER -->
+
 <p align="center">
-  <img src="https://media.githubusercontent.com/media/rodrigograca31/rodrigograca31/master/matrix.svg" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:7F00FF,100:00F5FF&height=3"/>
 </p>
 
 ---
@@ -50,6 +52,12 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=html,css,js" />
+</p>
+
+<!-- NEON DIVIDER -->
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=2"/>
 </p>
 
 ---
@@ -91,7 +99,7 @@ After publication:
 
 ---
 
-## Live Activity
+## Activity
 
 <p align="center">
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=sanjayragavendra&theme=tokyonight&hide_border=true"/>
@@ -113,7 +121,7 @@ After publication:
 
 ---
 
-<!-- FUTURISTIC FOOTER -->
+<!-- FINAL FOOTER -->
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:7F00FF,100:00F5FF&height=200&section=footer"/>
