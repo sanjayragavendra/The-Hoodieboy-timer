@@ -68,7 +68,7 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
   </a>
   &nbsp;&nbsp;&nbsp;
   <a href="https://www.worldcubeassociation.org/persons/2018KUMA18">
-    <img src="https://img.icons8.com/fluency/96/link.png" height="50"/>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/World_Cube_Association_logo.svg" height="50"/>
   </a>
 </p>
 
