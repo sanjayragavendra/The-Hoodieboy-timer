@@ -1,34 +1,60 @@
-# 🧩 The Hoodieboy Timer
+# The Hoodie Boy Timer
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+The Hoodie Boy Timer is a modern, web-based speedcubing timer designed for performance, simplicity, and real training use. It provides accurate timing, a clean interface, and reliable scramble generation using the Twisty Player API.
 
-A professional Rubik's Cube timer built for speedcubers, featuring WCA inspection, multiple timer modes, 3D scramble visualization, and support for all official WCA events.
+---
 
-![Hoodieboy Timer Demo](https://via.placeholder.com/800x400?text=Hoodieboy+Timer+Screenshot)
+## Overview
 
-## ✨ Features
+This project is built for cubers who want a distraction-free and efficient timing experience. The timer focuses on usability while maintaining a structured and professional interface suitable for both beginners and advanced solvers.
 
-- **🎯 WCA Standard Timer** - 15-second inspection with +2/DNF penalties
-- **🎮 Multiple Timer Modes**
-  - Default (Spacebar/Tap)
-  - Typing Mode (Manual Input)
-  - Bluetooth (GAN Timer support)
-- **🧩 18 Official WCA Events** - From 2x2 to 7x7, BLD, OH, and more!
-- **🔄 3D Scramble Visualization** - See your scramble in real-time 3D
-- **📊 Complete Statistics** - Ao5, Ao12, Best/Worst times per event
-- **💾 Data Management** - Import/Export solves (CSV/TXT)
-- **🎨 Immersive Background** - Dynamic particle system with mouse interaction
-- **📱 Mobile Friendly** - Touch support for on-the-go solving
+The application integrates scramble generation through the Twisty Player ecosystem, ensuring high-quality and standardized scrambles.
 
-## 🚀 Quick Start
+---
 
-### Online Demo
-Visit [hoodieboy-timer.vercel.app](https://hoodieboy-timer.vercel.app) (coming soon)
+## Features
 
-### Local Development
+* Accurate and responsive timer
+* Random scramble generation powered by Twisty Player API
+* Clean and minimal user interface
+* Lightweight and fast
+* Designed for future expansion (training modes, statistics, algorithm tools)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/hoodieboy-timer.git
-cd hoodieboy-timer
+---
+
+## Technology Stack
+
+* HTML
+* CSS
+* JavaScript
+* Twisty Player API
+
+---
+
+## Credits
+
+Scramble generation and cube visualization are powered by Twisty Player.
+
+---
+
+## Creator
+
+Sanjay Ragavendra
+Instagram: sanjayragavendrakumaresan
+WCA ID: 2018KUMA18
+
+---
+
+## Support the Project
+
+This project follows a pay-as-you-like model.
+
+UPI ID: sanjayragavendrak@oksbi
+
+Your support helps improve features and maintain the project.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
