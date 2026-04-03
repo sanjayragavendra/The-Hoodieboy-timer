@@ -1,0 +1,28 @@
+{
+  "name": "hoodieboy-timer",
+  "version": "1.0.0",
+  "description": "Professional Rubik's Cube timer with inspection, multiple timer modes, and 3D scramble visualization",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000 || npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "rubiks-cube",
+    "timer",
+    "speedcubing",
+    "wca",
+    "puzzle-timer",
+    "3d-visualization"
+  ],
+  "author": "Hoodieboy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/hoodieboy-timer.git"
+  },
+  "homepage": "https://yourusername.github.io/hoodieboy-timer",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
