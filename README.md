@@ -10,6 +10,8 @@
   <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=28&duration=2500&color=00F5FF&center=true&vCenter=true&width=900&lines=Speedcubing+Timer;Twisty+Player+Powered;Precision+%7C+Focus+%7C+Performance"/>
 </p>
 
+<!-- DIVIDER -->
+
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=3"/>
 </p>
@@ -18,7 +20,7 @@
 
 ## System Overview
 
-The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision, speed, and focus.
+The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision, speed, and focus. It delivers accurate timing and high-quality scramble generation powered by the Twisty Player API, wrapped in a clean and futuristic interface.
 
 ---
 
@@ -32,9 +34,9 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 * High precision timing system  
 * Twisty Player API integration  
-* Minimal UI  
+* Minimal and distraction-free UI  
 * Lightweight and fast  
-* Scalable design  
+* Designed for scalability  
 
 ---
 
@@ -42,6 +44,12 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=html,css,js" />
+</p>
+
+---
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=2"/>
 </p>
 
 ---
@@ -74,6 +82,13 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
   UPI ID: sanjayragavendrak@oksbi  
 </p>
 
+Sponsorship contributions will help in purchasing a domain and publishing the project online.
+
+After publication:
+
+* 75% will be used for charity by providing free cubes  
+* 25% will be reinvested into the project  
+
 ---
 
 ## Activity
@@ -88,14 +103,14 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
   <img src="https://github-readme-activity-graph.vercel.app/graph?username=sanjayragavendra&theme=react-dark&hide_border=true&area=true"/>
 </p>
 
-<!-- STATIC GRID -->
+<!-- LEETCODE STYLE GRID -->
 <p align="center">
   <img src="https://ghchart.rshah.org/00F5FF/sanjayragavendra" />
 </p>
 
-<!-- 🔥 LIVE MOVING "SNAKE" (BEST POSSIBLE ANIMATION) -->
+<!-- 🔥 LIVE MOVING SNAKE (FIXED LINK) -->
 <p align="center">
-  <img src="https://github.com/sanjayragavendra/sanjayragavendra/blob/output/github-contribution-grid-snake.svg" />
+  <img src="https://raw.githubusercontent.com/sanjayragavendra/The-Hoodieboy-timer/output/github-contribution-grid-snake.svg" />
 </p>
 
 ---
@@ -109,6 +124,8 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 </p>
 
 ---
+
+<!-- FOOTER -->
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:7F00FF,100:00F5FF&height=200&section=footer"/>
