@@ -10,7 +10,7 @@
   <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=28&duration=2500&color=00F5FF&center=true&vCenter=true&width=900&lines=Speedcubing+Timer;Twisty+Player+Powered;Precision+%7C+Focus+%7C+Performance"/>
 </p>
 
-<!-- CLEAN DIVIDER -->
+<!-- DIVIDER -->
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=3"/>
@@ -100,7 +100,7 @@ After publication:
 </p>
 
 <p align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=sanjayragavendra&theme=react-dark&hide_border=true&area=true"/>
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=sanjayragavendra&theme=react-dark&hide_border=true&area=true&custom_title=Monthly%20Contribution%20Graph"/>
 </p>
 
 ---
