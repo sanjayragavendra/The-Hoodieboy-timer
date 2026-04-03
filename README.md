@@ -34,11 +34,11 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 ## Core Features
 
-* High precision timing system
-* Twisty Player API integration
-* Minimal and distraction-free UI
-* Lightweight and fast
-* Designed for scalability
+* High precision timing system  
+* Twisty Player API integration  
+* Minimal and distraction-free UI  
+* Lightweight and fast  
+* Designed for scalability  
 
 ---
 
@@ -67,7 +67,7 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
     <img src="https://img.icons8.com/color/96/gmail-new.png" height="50"/>
   </a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://www.worldcubeassociation.org/persons/2018KUMA25">
+  <a href="https://www.worldcubeassociation.org/persons/2018KUMA18">
     <img src="https://img.icons8.com/fluency/96/link.png" height="50"/>
   </a>
 </p>
@@ -88,19 +88,29 @@ Sponsorship contributions will help in purchasing a domain and publishing the pr
 
 After publication:
 
-* 75% will be used for charity by providing free cubes
-* 25% will be reinvested into the project
+* 75% will be used for charity by providing free cubes  
+* 25% will be reinvested into the project  
 
 ---
 
 ## Activity
 
+<!-- STREAK -->
+
 <p align="center">
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=sanjayragavendra&theme=tokyonight&hide_border=true"/>
 </p>
 
+<!-- GRAPH -->
+
 <p align="center">
   <img src="https://github-readme-activity-graph.vercel.app/graph?username=sanjayragavendra&theme=react-dark&hide_border=true&area=true"/>
+</p>
+
+<!-- LEETCODE STYLE BOX GRID -->
+
+<p align="center">
+  <img src="https://ghchart.rshah.org/00F5FF/sanjayragavendra" alt="Contribution Graph"/>
 </p>
 
 ---
