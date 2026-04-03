@@ -103,15 +103,12 @@ After publication:
   <img src="https://github-readme-activity-graph.vercel.app/graph?username=sanjayragavendra&theme=react-dark&hide_border=true&area=true"/>
 </p>
 
-<!-- LEETCODE STYLE GRID -->
+<!-- 🔥 ONLY ANIMATED SNAKE (CLEAN) -->
+<br>
 <p align="center">
-  <img src="https://ghchart.rshah.org/00F5FF/sanjayragavendra" />
+  <img width="100%" src="https://raw.githubusercontent.com/sanjayragavendra/The-Hoodieboy-timer/output/github-contribution-grid-snake.svg" />
 </p>
-
-<!-- 🔥 LIVE MOVING SNAKE (FIXED LINK) -->
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sanjayragavendra/The-Hoodieboy-timer/output/github-contribution-grid-snake.svg" />
-</p>
+<br>
 
 ---
 
