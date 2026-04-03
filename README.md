@@ -20,7 +20,7 @@
 
 The Hoodie Boy Timer is a modern, web-based speedcubing timer designed for performance, simplicity, and real training use. It provides accurate timing, a clean interface, and reliable scramble generation using the Twisty Player API.
 
-This project is built for cubers who want a distraction-free and efficient timing experience, while still maintaining a visually structured and professional interface.
+This project is built for cubers who want a distraction-free and efficient timing experience, while maintaining a structured and professional interface.
 
 ---
 
@@ -46,18 +46,25 @@ This project is built for cubers who want a distraction-free and efficient timin
 ## Creator
 
 Sanjay Ragavendra
-Instagram: sanjayragavendrakumaresan
-WCA ID: 2018KUMA18
+
+* Instagram: https://www.instagram.com/sanjayragavendrakumaresan
+* WCA Profile: https://www.worldcubeassociation.org/persons/2018KUMA18
+* Email: mailto:sanjayragavendrak@gmail.com
 
 ---
 
-## Support the Project
+## Support and Sponsorship
 
 This project follows a pay-as-you-like model.
 
 UPI ID: sanjayragavendrak@oksbi
 
-Your support helps improve features and maintain the project.
+Sponsorship contributions will help in purchasing a domain and publishing the project online.
+
+After publication:
+
+* 75% of the funds will be used for charitable purposes by providing free cubes to those in need
+* The remaining 25% will be reinvested into improving and maintaining the project
 
 ---
 
