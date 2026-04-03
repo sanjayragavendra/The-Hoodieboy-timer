@@ -1,16 +1,16 @@
-<!-- ULTRA HEADER -->
+<!-- CUSTOM BANNER (USE YOUR GENERATED IMAGE) -->
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=venom&color=0:00F5FF,100:7F00FF&height=260&section=header&text=The%20Hoodie%20Boy%20Timer&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=40"/>
+  <img src="YOUR_BANNER_IMAGE_LINK_HERE" width="100%"/>
 </p>
 
-<!-- TYPING -->
+<!-- SUBTITLE LINE -->
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=28&duration=2500&color=00F5FF&center=true&vCenter=true&width=900&lines=Speedcubing+Timer;Twisty+Player+Powered;Precision+%7C+Focus+%7C+Performance"/>
+  Speedcubing Timer | Twisty Player Powered | Precision | Focus | Performance
 </p>
 
-<!-- DIVIDER -->
+<!-- GLOW DIVIDER -->
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=3"/>
@@ -24,21 +24,25 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 ---
 
-<!-- DIVIDER -->
-
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:7F00FF,100:00F5FF&height=3"/>
-</p>
-
----
-
 ## Core Features
+
+<table align="center">
+<tr>
+<td>
 
 * High precision timing system
 * Twisty Player API integration
 * Minimal and distraction-free UI
+
+</td>
+<td>
+
 * Lightweight and fast
 * Designed for scalability
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -46,12 +50,6 @@ The Hoodie Boy Timer is a modern web-based speedcubing timer built for precision
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=html,css,js" />
-</p>
-
-<!-- DIVIDER -->
-
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:00F5FF,100:7F00FF&height=2"/>
 </p>
 
 ---
