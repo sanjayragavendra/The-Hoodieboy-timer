@@ -1,14 +1,26 @@
-# The Hoodie Boy Timer
+<!-- Animated Typing Header -->
 
-The Hoodie Boy Timer is a modern, web-based speedcubing timer designed for performance, simplicity, and real training use. It provides accurate timing, a clean interface, and reliable scramble generation using the Twisty Player API.
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Montserrat&size=28&duration=3000&color=00C2FF&center=true&vCenter=true&width=700&lines=The+Hoodie+Boy+Timer;Speedcubing+Timer+Built+for+Performance;Minimal+Design+Maximum+Focus" />
+</p>
+
+---
+
+<h1 align="center">The Hoodie Boy Timer</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Active-00C2FF?style=for-the-badge">
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Platform-Web-black?style=for-the-badge">
+</p>
 
 ---
 
 ## Overview
 
-This project is built for cubers who want a distraction-free and efficient timing experience. The timer focuses on usability while maintaining a structured and professional interface suitable for both beginners and advanced solvers.
+The Hoodie Boy Timer is a modern, web-based speedcubing timer designed for performance, simplicity, and real training use. It provides accurate timing, a clean interface, and reliable scramble generation using the Twisty Player API.
 
-The application integrates scramble generation through the Twisty Player ecosystem, ensuring high-quality and standardized scrambles.
+This project is built for cubers who want a distraction-free and efficient timing experience, while still maintaining a visually structured and professional interface.
 
 ---
 
@@ -18,7 +30,7 @@ The application integrates scramble generation through the Twisty Player ecosyst
 * Random scramble generation powered by Twisty Player API
 * Clean and minimal user interface
 * Lightweight and fast
-* Designed for future expansion (training modes, statistics, algorithm tools)
+* Designed for scalability and future improvements
 
 ---
 
@@ -28,12 +40,6 @@ The application integrates scramble generation through the Twisty Player ecosyst
 * CSS
 * JavaScript
 * Twisty Player API
-
----
-
-## Credits
-
-Scramble generation and cube visualization are powered by Twisty Player.
 
 ---
 
@@ -58,3 +64,11 @@ Your support helps improve features and maintain the project.
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+<!-- Animated Wave Footer -->
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=00C2FF&height=120&section=footer"/>
+</p>
