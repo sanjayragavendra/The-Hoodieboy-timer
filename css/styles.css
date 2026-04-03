@@ -1,0 +1,399 @@
+body { 
+    font-family: 'Roboto Mono', monospace; 
+    color: white; 
+    text-shadow: 0 0 8px rgba(0,255,255,0.7); 
+    background-color: #0c0a15; 
+    overflow: hidden; 
+}
+
+#bg-canvas { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: -1; 
+}
+
+.panel { 
+    background: rgba(17,24,39,0.75); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 1rem; 
+}
+
+/* Timer states */
+.timer-inspecting { 
+    color: #67E8F9; 
+    text-shadow: 0 0 15px #67E8F9; 
+}
+
+.timer-ready { 
+    color: #34D399; 
+    text-shadow: 0 0 15px #34D399; 
+}
+
+.timer-running { 
+    color: #F87171; 
+    text-shadow: 0 0 20px #F87171; 
+}
+
+.timer-penalty { 
+    color: #FBBF24; 
+    text-shadow: 0 0 15px #FBBF24; 
+}
+
+.timer-display { 
+    font-family: 'Orbitron', sans-serif; 
+    font-size: clamp(2.5rem,12vw,8rem); 
+    transition: color .3s, text-shadow .3s; 
+}
+
+/* Typing mode styles */
+.typing-mode-input {
+    background: rgba(0,0,0,0.5);
+    border: 2px solid #67E8F9;
+    border-radius: 12px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    text-align: center;
+    color: #67E8F9;
+    outline: none;
+    width: 200px;
+    padding: 10px;
+}
+
+.typing-mode-input:focus {
+    box-shadow: 0 0 20px rgba(103,232,249,0.5);
+}
+
+/* Animations */
+.inspection-tick { 
+    animation: ipulse .5s ease-in-out; 
+}
+
+@keyframes ipulse { 
+    0%{transform:scale(1)} 
+    50%{transform:scale(1.15)} 
+    100%{transform:scale(1)} 
+}
+
+@keyframes new-best-celebrate {
+    0%  { transform:scale(1);    color:white;   text-shadow:none; }
+    25% { transform:scale(1.15); color:#fde047; text-shadow:0 0 10px #fde047,0 0 30px #f59e0b; }
+    50% { transform:scale(1.05); color:#bef264; text-shadow:0 0 10px #bef264,0 0 30px #84cc16; }
+    75% { transform:scale(1.15); color:#67E8F9; text-shadow:0 0 10px #67E8F9,0 0 30px #06b6d4; }
+    100%{ transform:scale(1);    color:white;   text-shadow:none; }
+}
+
+.new-best-animation { 
+    animation: new-best-celebrate 2.5s ease-in-out; 
+}
+
+@keyframes new-worst-drop {
+    0%  { transform:translateY(-80px) scaleY(1.2); opacity:0; }
+    20% { transform:translateY(0) scaleY(1);       opacity:1; }
+    40% { transform:translateY(-20px) scaleY(1.05); }
+    60% { transform:translateY(0) scaleY(1); }
+    100%{ transform:translateY(0) scaleY(1); }
+}
+
+.new-worst-animation { 
+    animation: new-worst-drop 1.2s cubic-bezier(.5,0,.5,1.5); 
+    color:#F87171; 
+    text-shadow:0 0 15px #F87171; 
+}
+
+.scramble-text { 
+    font-size: clamp(.9rem,2.5vw,1.4rem); 
+    transition: opacity .5s, transform .5s; 
+    min-height: 40px; 
+    line-height: 1.6; 
+    word-break: break-all; 
+}
+
+.history-table tr:hover { 
+    background: rgba(255,255,255,.05); 
+}
+
+.custom-select { 
+    background: rgba(31,41,55,.7); 
+    color: #d1d5db; 
+    border: 1px solid rgba(255,255,255,.2); 
+}
+
+.status-dnf { 
+    color: #f87171; 
+    font-weight: bold; 
+}
+
+.status-plus2 { 
+    color: #fbbf24; 
+}
+
+/* Scramble visualizer */
+#puzzle-visualization {
+    margin: .75rem auto 0;
+    opacity: 0;
+    transition: opacity .5s ease .1s;
+    display: flex;
+    justify-content: center;
+    min-height: 280px;
+    align-items: center;
+}
+
+#puzzle-visualization.show { 
+    opacity: 1; 
+}
+
+twisty-player {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    min-height: 280px;
+    --background: transparent;
+}
+
+/* Focus / Layout transitions */
+#left-column, #stats-panel, #contact-me-box { 
+    transition: opacity .4s, transform .4s; 
+}
+
+#timer-container { 
+    transition: all .5s; 
+}
+
+body.focus-mode #left-column { 
+    opacity:0; 
+    transform:translateX(-100%); 
+    pointer-events:none; 
+}
+
+body.focus-mode #stats-panel { 
+    opacity:0; 
+    transform:scale(.9);         
+    pointer-events:none; 
+}
+
+body.focus-mode #contact-me-box { 
+    opacity:0; 
+    transform:translateY(100%);  
+    pointer-events:none; 
+}
+
+body.focus-mode #timer-container {
+    position:fixed; 
+    top:0; 
+    left:0; 
+    width:100vw; 
+    height:100vh;
+    z-index:100; 
+    margin:0; 
+    padding:0; 
+    flex-grow:1;
+    background:rgba(12,10,21,.25);
+}
+
+body.focus-mode #timer { 
+    font-size: clamp(5rem,25vw,18rem); 
+}
+
+#contact-me-box.visible { 
+    opacity:1; 
+    transform:translate(-50%,0); 
+}
+
+/* ── SETTINGS MODAL ── */
+#settings-modal {
+    position: fixed; 
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: 1rem;
+    z-index: 200;
+    opacity: 0; 
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+#settings-modal.open { 
+    opacity: 1; 
+    pointer-events: all; 
+}
+
+#settings-modal .modal-box {
+    background: rgba(15,20,35,.95);
+    border: 1px solid rgba(103,232,249,.25);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    width: 100%; 
+    max-width: 420px;
+    box-shadow: 0 0 40px rgba(103,232,249,.15);
+    transform: scale(.94);
+    transition: transform .3s;
+}
+
+#settings-modal.open .modal-box { 
+    transform: scale(1); 
+}
+
+.toggle-track {
+    width: 44px; 
+    height: 24px;
+    background: rgba(255,255,255,.15);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background .25s;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,.2);
+}
+
+.toggle-track.on { 
+    background: rgba(52,211,153,.5); 
+    border-color: #34D399; 
+}
+
+.toggle-knob {
+    position: absolute; 
+    top: 2px; 
+    left: 2px;
+    width: 18px; 
+    height: 18px;
+    background: white; 
+    border-radius: 50%;
+    transition: left .25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+
+.toggle-track.on .toggle-knob { 
+    left: 22px; 
+}
+
+/* Settings button */
+#settings-btn {
+    position: fixed; 
+    top: 1rem; 
+    right: 1rem;
+    z-index: 150;
+    width: 38px; 
+    height: 38px;
+    background: rgba(17,24,39,.8);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: .6rem;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+#settings-btn:hover { 
+    border-color: rgba(103,232,249,.6); 
+    box-shadow: 0 0 10px rgba(103,232,249,.2); 
+}
+
+/* Manual entry modal */
+#manual-modal {
+    position: fixed; 
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: 1rem;
+    z-index: 210;
+    opacity: 0; 
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+#manual-modal.open { 
+    opacity: 1; 
+    pointer-events: all; 
+}
+
+#manual-modal .modal-box {
+    background: rgba(15,20,35,.95);
+    border: 1px solid rgba(103,232,249,.25);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    width: 100%; 
+    max-width: 360px;
+    box-shadow: 0 0 40px rgba(103,232,249,.15);
+    transform: scale(.94);
+    transition: transform .3s;
+}
+
+#manual-modal.open .modal-box { 
+    transform: scale(1); 
+}
+
+#manual-input {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-align: center;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(103,232,249,.5);
+    color: #67E8F9;
+    text-shadow: 0 0 10px #67E8F9;
+    outline: none;
+    letter-spacing: 0.05em;
+    padding: .25rem 0;
+}
+
+#manual-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    text-align: center;
+    color: rgba(255,255,255,.5);
+    margin-top: .5rem;
+    min-height: 1.5rem;
+}
+
+#manual-input::-webkit-inner-spin-button,
+#manual-input::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+}
+
+.settings-row {
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: .75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.settings-row:last-child { 
+    border-bottom: none; 
+}
+
+.settings-label { 
+    font-size: .9rem; 
+    color: #d1d5db; 
+}
+
+.settings-desc { 
+    font-size: .72rem; 
+    color: rgba(255,255,255,.35); 
+    margin-top:.15rem;
+}
+
+.mode-select {
+    background: rgba(31,41,55,.7);
+    color: #d1d5db;
+    border: 1px solid rgba(103,232,249,.4);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.mode-select:hover {
+    border-color: rgba(103,232,249,.8);
+}
