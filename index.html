@@ -29,7 +29,7 @@
         .timer-display    { font-family: 'Orbitron', sans-serif; font-size: clamp(2.5rem,12vw,8rem); transition: color .3s, text-shadow .3s; }
 
 
-        /* Full screen styles that work on both PC and mobile */
+        /* Full screen styles that work on both PC and mobile - WITHOUT dark overlay */
 body.focus-mode {
     overflow: hidden;
     position: fixed;
@@ -52,7 +52,8 @@ body.focus-mode #timer-container {
     z-index: 9999 !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: rgba(12, 10, 21, 0.95) !important;
+    background: transparent !important;  /* ← KEEP BACKGROUND VISIBLE */
+    background-color: transparent !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
