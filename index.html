@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Hoodieboy Timer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gan-web-bluetooth@latest/dist/gan-web-bluetooth.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Cubing.js and Twisty Player from CDN -->
     <script type="importmap">
@@ -617,13 +618,11 @@ const timerDisplay = document.getElementById('timer');
 const typingInput = document.getElementById('typing-mode-input');
 const bluetoothStatus = document.getElementById('bluetooth-status');
 
-// GAN Bluetooth Timer simulation (Web Bluetooth API)
-let bluetoothDevice = null;
-let bluetoothServer = null;
-let bluetoothCharacteristic = null;
+// GAN Bluetooth Timer with gan-web-bluetooth library
+let ganConnection = null;
+let ganSubscription = null;
 
-timerModeSelect.value = timerMode;
-
+// Timer mode switching function
 function switchTimerMode(mode) {
     timerMode = mode;
     localStorage.setItem('timerMode', mode);
@@ -636,75 +635,25 @@ function switchTimerMode(mode) {
     if (mode === 'default') {
         timerDisplay.style.display = 'block';
         // Re-enable default timer controls
-        enableDefaultTimerControls(true);
+        if (window.enableDefaultTimerControls) window.enableDefaultTimerControls(true);
     } else if (mode === 'typing') {
         typingInput.style.display = 'block';
         typingInput.value = '';
         typingInput.placeholder = 'Enter time (e.g., 12.34)';
-        // Disable default timer controls
-        enableDefaultTimerControls(false);
-        // Focus on input
+        if (window.enableDefaultTimerControls) window.enableDefaultTimerControls(false);
         setTimeout(() => typingInput.focus(), 100);
+        // Disconnect Bluetooth if connected
+        if (ganConnection) disconnectGANTimer();
     } else if (mode === 'bluetooth') {
         bluetoothStatus.style.display = 'block';
         bluetoothStatus.textContent = '🔍 Searching for GAN Timer...';
-        // Disable default timer controls
-        enableDefaultTimerControls(false);
+        if (window.enableDefaultTimerControls) window.enableDefaultTimerControls(false);
         // Attempt to connect to GAN timer
         connectToGANTimer();
     }
 }
 
-function enableDefaultTimerControls(enabled) {
-    // This will be handled in the keyboard/touch event listeners
-    window.defaultTimerEnabled = enabled;
-}
-
-// Typing mode handler
-typingInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        const timeStr = typingInput.value.trim();
-        if (timeStr) {
-            // Parse time string (supports MM:SS.cs, SS.cs, or just SS.cs)
-            let seconds = 0;
-            let minutes = 0;
-            let centiseconds = 0;
-            
-            if (timeStr.includes(':')) {
-                const parts = timeStr.split(':');
-                minutes = parseFloat(parts[0]) || 0;
-                const secPart = parts[1];
-                if (secPart.includes('.')) {
-                    const secParts = secPart.split('.');
-                    seconds = parseFloat(secParts[0]) || 0;
-                    centiseconds = parseFloat(secParts[1]) || 0;
-                } else {
-                    seconds = parseFloat(secPart) || 0;
-                }
-            } else if (timeStr.includes('.')) {
-                const parts = timeStr.split('.');
-                seconds = parseFloat(parts[0]) || 0;
-                centiseconds = parseFloat(parts[1]) || 0;
-            } else {
-                seconds = parseFloat(timeStr) || 0;
-            }
-            
-            const totalMs = (minutes * 60 + seconds) * 1000 + centiseconds * 10;
-            if (totalMs > 0) {
-                addTime({ baseTime: totalMs, status: 'ok', event: eventSel.value });
-                generateScramble();
-                typingInput.value = '';
-                // Add a small celebration effect
-                timerDisplay.textContent = formatTime(totalMs);
-                timerDisplay.classList.add('new-best-animation');
-                setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500);
-            }
-        }
-        typingInput.focus();
-    }
-});
-
-// Bluetooth GAN Timer connection
+// Connect to GAN Timer using gan-web-bluetooth
 async function connectToGANTimer() {
     try {
         // Check if Web Bluetooth is supported
@@ -713,48 +662,243 @@ async function connectToGANTimer() {
             return;
         }
         
-        bluetoothStatus.textContent = '🔍 Searching for GAN Timer... (Press button on timer)';
+        bluetoothStatus.textContent = '🔍 Searching for GAN Timer...';
         
-        // Request device - GAN timers typically use standard Bluetooth LE
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [
-                { namePrefix: 'GAN' },
-                { namePrefix: 'Cube' },
-                { namePrefix: 'Timer' }
-            ],
-            optionalServices: ['0000180f-0000-1000-8000-00805f9b34fb'] // Battery service, common for timers
-        });
+        // Use the gan-web-bluetooth library
+        const GanWebBluetooth = window.GanWebBluetooth;
         
-        bluetoothDevice = device;
-        bluetoothStatus.textContent = `✅ Connected to ${device.name || 'GAN Timer'}`;
+        if (!GanWebBluetooth) {
+            bluetoothStatus.textContent = '❌ gan-web-bluetooth library not loaded';
+            console.error('Make sure gan-web-bluetooth script is loaded');
+            return;
+        }
         
-        device.addEventListener('gattserverdisconnected', onDisconnected);
+        ganConnection = await GanWebBluetooth.connectGanTimer();
+        bluetoothStatus.textContent = '✅ Connected to GAN Timer';
         
-        const server = await device.gatt.connect();
-        bluetoothServer = server;
-        
-        // Try to find a characteristic that sends time data
-        // This is a simplified implementation - actual GAN timer may use specific UUIDs
-        const services = await server.getPrimaryServices();
-        for (const service of services) {
-            const characteristics = await service.getCharacteristics();
-            for (const characteristic of characteristics) {
-                const properties = characteristic.properties;
-                if (properties.notify || properties.indicate) {
-                    await characteristic.startNotifications();
-                    characteristic.addEventListener('characteristicvaluechanged', handleTimerValue);
-                    bluetoothCharacteristic = characteristic;
-                    bluetoothStatus.textContent = `✅ Listening for timer data...`;
-                    break;
+        // Subscribe to timer events
+        if (ganConnection.events$) {
+            ganSubscription = ganConnection.events$.subscribe((timerEvent) => {
+                switch (timerEvent.state) {
+                    case GanWebBluetooth.GanTimerState.RUNNING:
+                        bluetoothStatus.textContent = '⏱️ Timer running...';
+                        timerDisplay.classList.add('timer-running');
+                        break;
+                        
+                    case GanWebBluetooth.GanTimerState.STOPPED:
+                        const recordedTime = timerEvent.recordedTime;
+                        if (recordedTime && recordedTime > 0) {
+                            // Add the time to history
+                            if (typeof addTime === 'function' && typeof generateScramble === 'function') {
+                                addTime({ baseTime: recordedTime, status: 'ok', event: eventSel.value });
+                                generateScramble();
+                                timerDisplay.textContent = formatTime(recordedTime);
+                                timerDisplay.classList.add('new-best-animation');
+                                setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500);
+                            }
+                            bluetoothStatus.textContent = '✅ Time recorded!';
+                            setTimeout(() => {
+                                if (timerMode === 'bluetooth') {
+                                    bluetoothStatus.textContent = '🎯 Ready for next solve';
+                                }
+                            }, 1500);
+                        }
+                        timerDisplay.classList.remove('timer-running');
+                        break;
+                        
+                    default:
+                        console.log(`Timer state changed: ${timerEvent.state}`);
                 }
+            });
+        }
+        
+        // Read previous times from timer memory
+        if (ganConnection.getRecordedTimes) {
+            const recTimes = await ganConnection.getRecordedTimes();
+            if (recTimes && recTimes.previousTimes && recTimes.previousTimes.length > 0) {
+                console.log('Previous times from timer:', recTimes.previousTimes);
+                bluetoothStatus.textContent = `✅ Connected - ${recTimes.previousTimes.length} previous times available`;
+                setTimeout(() => {
+                    if (timerMode === 'bluetooth') {
+                        bluetoothStatus.textContent = '🎯 Ready for next solve';
+                    }
+                }, 2000);
             }
         }
         
-        // Simulate timer data for demo (since actual GAN timer protocol is proprietary)
-        // In a real implementation, you'd parse the actual BLE data
-        simulateGANTimerData();
+    } catch (error) {
+        console.error('Bluetooth connection error:', error);
+        bluetoothStatus.textContent = `❌ Connection failed: ${error.message}`;
+        ganConnection = null;
+    }
+}
+
+// Disconnect function
+function disconnectGANTimer() {
+    if (ganSubscription) {
+        ganSubscription.unsubscribe();
+        ganSubscription = null;
+    }
+    if (ganConnection && ganConnection.disconnect) {
+        ganConnection.disconnect();
+    }
+    ganConnection = null;
+}
+
+// Set up timer mode selector event listener
+timerModeSelect.value = timerMode;
+timerModeSelect.addEventListener('change', (e) => {
+    switchTimerMode(e.target.value);
+});
+
+// Initialize the selected mode
+switchTimerMode(timerMode);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (ganConnection) {
+        disconnectGANTimer();
+    }
+});
+
+async function connectToGANTimer() {
+    try {
+        // Check if Web Bluetooth is supported
+        if (!navigator.bluetooth) {
+            bluetoothStatus.textContent = '❌ Web Bluetooth not supported in this browser';
+            return;
+        }
+        
+        bluetoothStatus.textContent = '🔍 Searching for GAN Timer...';
+        
+        // Use the gan-web-bluetooth library
+        // Check if the global object exists (from UMD script)
+        const GanWebBluetooth = window.GanWebBluetooth || (await import('gan-web-bluetooth'));
+        
+        ganConnection = await GanWebBluetooth.connectGanTimer();
+        bluetoothStatus.textContent = '✅ Connected to GAN Timer';
+        
+        // Subscribe to timer events
+        if (ganConnection.events$) {
+            ganSubscription = ganConnection.events$.subscribe((timerEvent) => {
+                switch (timerEvent.state) {
+                    case GanWebBluetooth.GanTimerState.RUNNING:
+                        bluetoothStatus.textContent = '⏱️ Timer running...';
+                        timerDisplay.classList.add('timer-running');
+                        break;
+                        
+                    case GanWebBluetooth.GanTimerState.STOPPED:
+                        const recordedTime = timerEvent.recordedTime;
+                        if (recordedTime && recordedTime > 0) {
+                            // Add the time to history
+                            addTime({ baseTime: recordedTime, status: 'ok', event: eventSel.value });
+                            generateScramble();
+                            timerDisplay.textContent = formatTime(recordedTime);
+                            timerDisplay.classList.add('new-best-animation');
+                            setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500);
+                            bluetoothStatus.textContent = '✅ Time recorded!';
+                            setTimeout(() => {
+                                if (timerMode === 'bluetooth') {
+                                    bluetoothStatus.textContent = '🎯 Ready for next solve';
+                                }
+                            }, 1500);
+                        }
+                        timerDisplay.classList.remove('timer-running');
+                        break;
+                        
+                    default:
+                        console.log(`Timer state changed: ${timerEvent.state}`);
+                        bluetoothStatus.textContent = `Timer state: ${timerEvent.state}`;
+                }
+            });
+        }
+        
+        // Optional: Read previous times from timer memory
+        if (ganConnection.getRecordedTimes) {
+            const recTimes = await ganConnection.getRecordedTimes();
+            if (recTimes && recTimes.previousTimes && recTimes.previousTimes.length > 0) {
+                console.log('Previous times from timer:', recTimes.previousTimes);
+                // Optional: show a notification
+                bluetoothStatus.textContent = `✅ Connected - ${recTimes.previousTimes.length} previous times available`;
+                setTimeout(() => {
+                    if (timerMode === 'bluetooth') {
+                        bluetoothStatus.textContent = '🎯 Ready for next solve';
+                    }
+                }, 2000);
+            }
+        }
         
     } catch (error) {
+        console.error('Bluetooth connection error:', error);
+        bluetoothStatus.textContent = `❌ Connection failed: ${error.message}`;
+        bluetoothDevice = null;
+        ganConnection = null;
+        
+        // Optional: Fallback to demo mode after 3 seconds
+        setTimeout(() => {
+            if (bluetoothStatus.textContent.includes('failed') && timerMode === 'bluetooth') {
+                bluetoothStatus.textContent = '⚠️ Using demo mode - press timer button to simulate';
+                simulateGANTimerData();
+            }
+        }, 3000);
+    }
+}
+
+// Keep the simulateGANTimerData function for demo fallback
+let simulationInterval = null;
+function simulateGANTimerData() {
+    if (simulationInterval) clearInterval(simulationInterval);
+    
+    let isPressed = false;
+    let pressStartTime = 0;
+    
+    // Listen for spacebar to simulate timer press on GAN timer
+    window.addEventListener('keydown', (e) => {
+        if (timerMode !== 'bluetooth') return;
+        if (e.code === 'Space' && !e.repeat && !isPressed) {
+            e.preventDefault();
+            isPressed = true;
+            pressStartTime = Date.now();
+            bluetoothStatus.textContent = '⏱️ Timer ready - release to stop';
+            timerDisplay.classList.add('timer-running');
+        }
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        if (timerMode !== 'bluetooth') return;
+        if (e.code === 'Space' && isPressed) {
+            e.preventDefault();
+            const elapsed = Date.now() - pressStartTime;
+            if (elapsed > 100) { // Debounce
+                addTime({ baseTime: elapsed, status: 'ok', event: eventSel.value });
+                generateScramble();
+                timerDisplay.textContent = formatTime(elapsed);
+                timerDisplay.classList.add('new-best-animation');
+                setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500);
+                bluetoothStatus.textContent = '✅ Time recorded!';
+                setTimeout(() => {
+                    if (timerMode === 'bluetooth') {
+                        bluetoothStatus.textContent = '🎯 Ready for next solve';
+                    }
+                }, 1500);
+            }
+            isPressed = false;
+            timerDisplay.classList.remove('timer-running');
+        }
+    });
+}
+
+// Cleanup function for disconnection
+function disconnectGANTimer() {
+    if (ganSubscription) {
+        ganSubscription.unsubscribe();
+        ganSubscription = null;
+    }
+    if (ganConnection && ganConnection.disconnect) {
+        ganConnection.disconnect();
+    }
+    ganConnection = null;
+} catch (error) {
         console.error('Bluetooth connection error:', error);
         bluetoothStatus.textContent = `❌ Connection failed: ${error.message}`;
         setTimeout(() => {
@@ -864,7 +1008,7 @@ toggleInspection.addEventListener('click', () => {
 
 // Timer mode change handler
 timerModeSelect.addEventListener('change', (e) => {
-    switchTimerMode(e.target.value);
+    (e.target.value);
 });
 
 // Settings modal open/close
@@ -1264,6 +1408,12 @@ if (!localStorage.getItem('cubeTimerVisited')) {
     }, 1000);
 }
 setTimeout(() => document.getElementById('contact-me-box').classList.add('visible'), 3000);
+// Cleanup Bluetooth connection when page is closed or refreshed
+window.addEventListener('beforeunload', () => {
+    if (ganConnection) {
+        disconnectGANTimer();
+    }
+});
 </script>
 </body>
 </html>
