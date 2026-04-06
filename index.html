@@ -984,6 +984,9 @@ function speak(text) {
 }
 
 function startInspection() {
+    // Add focus-mode class to make timer full screen IMMEDIATELY
+    document.body.classList.add('focus-mode');
+    
     if (!settings.inspectionEnabled) {
         timerState = 'arming'; setTimerClass('timer-running');
         holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
@@ -1007,19 +1010,26 @@ function startInspection() {
 
 function startTimer() {
     document.body.classList.add('focus-mode');
-    startTime = Date.now(); timerState = 'timing'; setTimerClass('timer-running');
+    startTime = Date.now(); 
+    timerState = 'timing'; 
+    setTimerClass('timer-running');
     timerInterval = setInterval(() => {
         const e = Date.now() - startTime;
-        const m = Math.floor(e / 60000), s = Math.floor((e % 60000) / 1000);
+        const m = Math.floor(e / 60000), 
+        s = Math.floor((e % 60000) / 1000);
         timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
     }, 100);
 }
 
 function stopTimer(isDNF = false) {
-    clearInterval(timerInterval); clearInterval(inspectionTimer); inspectionTimer = null;
+    clearInterval(timerInterval); 
+    clearInterval(inspectionTimer); 
+    inspectionTimer = null;
     const final = isDNF ? Infinity : Date.now() - startTime;
     const status = (isDNF || inspectionPenalty === 'dnf') ? 'dnf' : inspectionPenalty === 2000 ? '+2' : 'ok';
-    timerState = 'stopped'; setTimerClass(''); timerDisplay.textContent = formatTime(final, status);
+    timerState = 'stopped'; 
+    setTimerClass(''); 
+    timerDisplay.textContent = formatTime(final, status);
     document.body.classList.remove('focus-mode');
 
     const event    = eventSel.value;
@@ -1030,15 +1040,25 @@ function stopTimer(isDNF = false) {
     const num = status === 'dnf' ? Infinity : final + (status === '+2' ? 2000 : 0);
     if (num !== Infinity) {
         const best = Math.min(...evTimes.filter(t => t.status !== 'dnf').map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)), Infinity);
-        if (num < best) { timerDisplay.classList.add('new-best-animation'); setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500); }
+        if (num < best) { 
+            timerDisplay.classList.add('new-best-animation'); 
+            setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500); 
+        }
     }
     const worst = Math.max(...evTimes.map(t => t.status === 'dnf' ? -1 : t.baseTime + (t.status === '+2' ? 2000 : 0)), 0);
-    if (num > worst && evTimes.length) { timerDisplay.classList.add('new-worst-animation'); setTimeout(() => timerDisplay.classList.remove('new-worst-animation'), 1200); }
+    if (num > worst && evTimes.length) { 
+        timerDisplay.classList.add('new-worst-animation'); 
+        setTimeout(() => timerDisplay.classList.remove('new-worst-animation'), 1200); 
+    }
 }
-
 function cancelSolve() {
-    clearTimeout(holdTimeout); clearInterval(inspectionTimer); inspectionTimer = null; inspectionPenalty = 0;
-    timerState = 'stopped'; setTimerClass(''); timerDisplay.textContent = formatTime(0);
+    clearTimeout(holdTimeout); 
+    clearInterval(inspectionTimer); 
+    inspectionTimer = null; 
+    inspectionPenalty = 0;
+    timerState = 'stopped'; 
+    setTimerClass(''); 
+    timerDisplay.textContent = formatTime(0);
     document.body.classList.remove('focus-mode');
 }
 
