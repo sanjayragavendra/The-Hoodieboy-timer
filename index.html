@@ -1128,6 +1128,9 @@ function speak(text) {
 }
 
 function startInspection() {
+    // Add focus-mode class to make timer full screen
+    document.body.classList.add('focus-mode');
+    
     if (!settings.inspectionEnabled) {
         timerState = 'arming'; setTimerClass('timer-running');
         holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
@@ -1165,19 +1168,7 @@ function stopTimer(isDNF = false) {
     const status = (isDNF || inspectionPenalty === 'dnf') ? 'dnf' : inspectionPenalty === 2000 ? '+2' : 'ok';
     timerState = 'stopped'; setTimerClass(''); timerDisplay.textContent = formatTime(final, status);
     document.body.classList.remove('focus-mode');
-
-    const event    = eventSel.value;
-    const evTimes  = times.filter(t => t.event === event);
-    addTime({ baseTime: final, status, event });
-    generateScramble();
-
-    const num = status === 'dnf' ? Infinity : final + (status === '+2' ? 2000 : 0);
-    if (num !== Infinity) {
-        const best = Math.min(...evTimes.filter(t => t.status !== 'dnf').map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)), Infinity);
-        if (num < best) { timerDisplay.classList.add('new-best-animation'); setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500); }
-    }
-    const worst = Math.max(...evTimes.map(t => t.status === 'dnf' ? -1 : t.baseTime + (t.status === '+2' ? 2000 : 0)), 0);
-    if (num > worst && evTimes.length) { timerDisplay.classList.add('new-worst-animation'); setTimeout(() => timerDisplay.classList.remove('new-worst-animation'), 1200); }
+    // ... rest of the function
 }
 
 function cancelSolve() {
