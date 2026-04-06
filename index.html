@@ -27,7 +27,28 @@
         .timer-running    { color: #F87171; text-shadow: 0 0 20px #F87171; }
         .timer-penalty    { color: #FBBF24; text-shadow: 0 0 15px #FBBF24; }
         .timer-display    { font-family: 'Orbitron', sans-serif; font-size: clamp(2.5rem,12vw,8rem); transition: color .3s, text-shadow .3s; }
+/* Social logos auto-hide styles */
+#contact-me-box {
+    transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
 
+#contact-me-box.hidden {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
+}
+
+/* Ensure the box is above other elements when visible */
+#contact-me-box.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
 
         /* Full screen styles that work on both PC and mobile - WITHOUT dark overlay */
 body.focus-mode {
@@ -1372,6 +1393,104 @@ if (!localStorage.getItem('cubeTimerVisited')) {
     }, 1000);
 }
 setTimeout(() => document.getElementById('contact-me-box').classList.add('visible'), 3000);
+    // ═══════════════════════════════════════════════════════════════
+//  SOCIAL LOGOS AUTO-HIDE FUNCTIONALITY
+// ═══════════════════════════════════════════════════════════════
+const contactBox = document.getElementById('contact-me-box');
+let hideTimeout = null;
+let isHovering = false;
+
+function hideContactBox() {
+    if (!isHovering && !isScrolling) {
+        contactBox.classList.add('hidden');
+        contactBox.classList.remove('visible');
+    }
+}
+
+function showContactBox() {
+    // Clear any pending hide timeout
+    if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+    }
+    
+    // Show the box
+    contactBox.classList.remove('hidden');
+    contactBox.classList.add('visible');
+    
+    // Set timeout to hide after 5 seconds
+    hideTimeout = setTimeout(() => {
+        if (!isHovering && !isScrolling) {
+            hideContactBox();
+        }
+    }, 5000);
+}
+
+// Track hover state
+contactBox.addEventListener('mouseenter', () => {
+    isHovering = true;
+    showContactBox();
+});
+
+contactBox.addEventListener('mouseleave', () => {
+    isHovering = false;
+    // Start the 5-second timer to hide
+    if (hideTimeout) clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+        if (!isHovering && !isScrolling) {
+            hideContactBox();
+        }
+    }, 5000);
+});
+
+// Track scrolling
+let isScrolling = false;
+let scrollTimeout = null;
+
+window.addEventListener('scroll', () => {
+    isScrolling = true;
+    showContactBox();
+    
+    // Clear previous timeout
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    
+    // After scrolling stops, wait 5 seconds then hide
+    scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+        if (!isHovering) {
+            hideTimeout = setTimeout(() => {
+                if (!isHovering && !isScrolling) {
+                    hideContactBox();
+                }
+            }, 5000);
+        }
+    }, 150); // Detect when scrolling stops
+});
+
+// Also show on mouse movement near the bottom of the page
+let mouseMoveTimeout = null;
+window.addEventListener('mousemove', (e) => {
+    // If mouse is near the bottom 100px of the page, show the box
+    const windowHeight = window.innerHeight;
+    const mouseY = e.clientY;
+    
+    if (mouseY > windowHeight - 100) {
+        showContactBox();
+    }
+});
+
+// Initial show with 5-second delay
+setTimeout(() => {
+    contactBox.classList.add('visible');
+    contactBox.classList.remove('hidden');
+    
+    // Auto hide after 5 seconds initially
+    hideTimeout = setTimeout(() => {
+        if (!isHovering && !isScrolling) {
+            hideContactBox();
+        }
+    }, 5000);
+}, 1000); // Show 1 second after page load, then hide after 5 seconds
 </script>
 </body>
 </html>
