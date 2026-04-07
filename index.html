@@ -1034,6 +1034,16 @@ function formatTime(ms, status = 'ok') {
     const m = Math.floor(total / 60000);
     const s = Math.floor((total % 60000) / 1000);
     const c = Math.floor((total % 1000) / 10);
+    
+    if (timerDisplayStyle === 'seconds') {
+        const totalSeconds = Math.floor(total / 1000);
+        if (m > 0) return `${m * 60 + s}` + (status === '+2' ? '+' : '');
+        return `${totalSeconds}` + (status === '+2' ? '+' : '');
+    } else if (timerDisplayStyle === 'milliseconds') {
+        if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+        return `${s}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+    }
+    
     return (m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}`) + '.' + String(c).padStart(2,'0') + (status === '+2' ? '+' : '');
 }
 
