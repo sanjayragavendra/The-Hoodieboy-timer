@@ -1148,10 +1148,11 @@ function startTimer() {
         if (style === 'seconds') {
             const totalSeconds = Math.floor(e / 1000);
             timerDisplay.textContent = m > 0 ? `${m * 60 + s}` : `${totalSeconds}`;
-        } else {
-            // Show milliseconds with centiseconds
-            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}` : `${s}.${String(cs).padStart(2,'0')}`;
-        }
+} else {
+    // Show milliseconds with centiseconds (ss.ms format)
+    const cs = Math.floor((e % 1000) / 10);
+    timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}` : `${s}.${String(cs).padStart(2,'0')}`;
+}
     }, style === 'seconds' ? 1000 : 100);
 }
 
