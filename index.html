@@ -708,16 +708,18 @@ let bluetoothServer = null;
 let bluetoothCharacteristic = null;
 
 timerModeSelect.value = timerMode;
-// Timer Display Style Settings
-let timerDisplayStyle = localStorage.getItem('timerDisplayStyle') || 'milliseconds';
+
+// Timer Display Style Settings - MUST be GLOBAL
+window.timerDisplayStyle = localStorage.getItem('timerDisplayStyle') || 'milliseconds';
 const timerDisplayStyleSelect = document.getElementById('timer-display-style');
 
 if (timerDisplayStyleSelect) {
-    timerDisplayStyleSelect.value = timerDisplayStyle;
+    timerDisplayStyleSelect.value = window.timerDisplayStyle;
     
     timerDisplayStyleSelect.addEventListener('change', (e) => {
-        timerDisplayStyle = e.target.value;
-        localStorage.setItem('timerDisplayStyle', timerDisplayStyle);
+        window.timerDisplayStyle = e.target.value;
+        localStorage.setItem('timerDisplayStyle', window.timerDisplayStyle);
+        console.log('Display style changed to:', window.timerDisplayStyle); // Debug
     });
 }
 function switchTimerMode(mode) {
