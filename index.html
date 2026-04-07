@@ -314,30 +314,7 @@ body.focus-mode .timer-inspecting {
             </div>
             <div id="toggle-inspection" class="toggle-track on"><div class="toggle-knob"></div></div>
         </div>
-        
-<div class="settings-row">
-    <div>
-        <div class="settings-label">Timer Update Style</div>
-        <div class="settings-desc">How the timer displays during solving</div>
-    </div>
-    <select id="timer-display-style" class="mode-select">
-        <option value="milliseconds">Milliseconds (12.34)</option>
-        <option value="seconds">Seconds only (12)</option>
-        <option value="hide">Hide time while solving</option>
-    </select>
-</div>
-        <div class="settings-row">
-    <div>
-        <div class="settings-label">Timer Mode</div>
-        <div class="settings-desc">How to record times</div>
-    </div>
-    <select id="timer-mode-select" class="mode-select">
-        <option value="default">Default (Spacebar/Tap)</option>
-        <option value="typing">Typing (Manual Input)</option>
-        <option value="bluetooth">Bluetooth (GAN Timer)</option>
-    </select>
-</div>
-        
+
         <div class="settings-row">
             <div>
                 <div class="settings-label">Timer Mode</div>
@@ -731,108 +708,6 @@ function switchTimerMode(mode) {
         connectToGANTimer();
     }
 }
-    // Timer Display Style Settings
-let timerDisplayStyle = localStorage.getItem('timerDisplayStyle') || 'milliseconds';
-const timerDisplayStyleSelect = document.getElementById('timer-display-style');
-
-if (timerDisplayStyleSelect) {
-    timerDisplayStyleSelect.value = timerDisplayStyle;
-    
-    timerDisplayStyleSelect.addEventListener('change', (e) => {
-        timerDisplayStyle = e.target.value;
-        localStorage.setItem('timerDisplayStyle', timerDisplayStyle);
-    });
-}
-
-// Modified formatTime function to support different display styles
-const originalFormatTime = formatTime;
-window.formatTime = function(ms, status = 'ok') {
-    if (status === 'dnf') return 'DNF';
-    const total = ms + (status === '+2' ? 2000 : 0);
-    const m = Math.floor(total / 60000);
-    const s = Math.floor((total % 60000) / 1000);
-    const c = Math.floor((total % 1000) / 10);
-    
-    if (timerDisplayStyle === 'seconds') {
-        const totalSeconds = Math.floor(total / 1000);
-        if (m > 0) return `${m * 60 + s}`;
-        return `${totalSeconds}`;
-    } else if (timerDisplayStyle === 'milliseconds') {
-        if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}`;
-        return `${s}.${String(c).padStart(2,'0')}`;
-    }
-    return originalFormatTime(ms, status);
-};
-
-// Modify the timerInterval in startTimer function to respect hide mode
-// Find the existing startTimer function and replace the timerInterval part
-// Or add this override:
-
-const originalStartTimer = startTimer;
-window.startTimer = function() {
-    document.body.classList.add('focus-mode');
-    startTime = Date.now(); 
-    timerState = 'timing'; 
-    setTimerClass('timer-running');
-    
-    // If hide mode is enabled, show placeholder
-    if (timerDisplayStyle === 'hide') {
-        timerDisplay.textContent = '⚡ SOLVING ⚡';
-    }
-    
-    timerInterval = setInterval(() => {
-        if (timerDisplayStyle === 'hide') {
-            // Don't update time, just show solving message
-            return;
-        }
-        const e = Date.now() - startTime;
-        const m = Math.floor(e / 60000), 
-        s = Math.floor((e % 60000) / 1000);
-        
-        if (timerDisplayStyle === 'seconds') {
-            const totalSeconds = Math.floor(e / 1000);
-            timerDisplay.textContent = m > 0 ? `${m * 60 + s}` : `${totalSeconds}`;
-        } else {
-            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
-        }
-    }, timerDisplayStyle === 'seconds' ? 1000 : 100);
-};
-
-// Override stopTimer to restore normal display
-const originalStopTimer = stopTimer;
-window.stopTimer = function(isDNF = false) {
-    clearInterval(timerInterval); 
-    clearInterval(inspectionTimer); 
-    inspectionTimer = null;
-    const final = isDNF ? Infinity : Date.now() - startTime;
-    const status = (isDNF || inspectionPenalty === 'dnf') ? 'dnf' : inspectionPenalty === 2000 ? '+2' : 'ok';
-    timerState = 'stopped'; 
-    setTimerClass(''); 
-    timerDisplay.textContent = formatTime(final, status);
-    document.body.classList.remove('focus-mode');
-    
-    exitFullScreen();
-
-    const event    = eventSel.value;
-    const evTimes  = times.filter(t => t.event === event);
-    addTime({ baseTime: final, status, event });
-    generateScramble();
-
-    const num = status === 'dnf' ? Infinity : final + (status === '+2' ? 2000 : 0);
-    if (num !== Infinity) {
-        const best = Math.min(...evTimes.filter(t => t.status !== 'dnf').map(t => t.baseTime + (t.status === '+2' ? 2000 : 0)), Infinity);
-        if (num < best) { 
-            timerDisplay.classList.add('new-best-animation'); 
-            setTimeout(() => timerDisplay.classList.remove('new-best-animation'), 2500); 
-        }
-    }
-    const worst = Math.max(...evTimes.map(t => t.status === 'dnf' ? -1 : t.baseTime + (t.status === '+2' ? 2000 : 0)), 0);
-    if (num > worst && evTimes.length) { 
-        timerDisplay.classList.add('new-worst-animation'); 
-        setTimeout(() => timerDisplay.classList.remove('new-worst-animation'), 1200); 
-    }
-};
-    
 
 function enableDefaultTimerControls(enabled) {
     // This will be handled in the keyboard/touch event listeners
@@ -1500,4 +1375,3 @@ setTimeout(() => document.getElementById('contact-me-box').classList.add('visibl
 </script>
 </body>
 </html>
-
