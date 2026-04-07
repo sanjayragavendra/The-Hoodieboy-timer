@@ -698,7 +698,18 @@ let bluetoothServer = null;
 let bluetoothCharacteristic = null;
 
 timerModeSelect.value = timerMode;
+// Timer Display Style Settings
+let timerDisplayStyle = localStorage.getItem('timerDisplayStyle') || 'milliseconds';
+const timerDisplayStyleSelect = document.getElementById('timer-display-style');
 
+if (timerDisplayStyleSelect) {
+    timerDisplayStyleSelect.value = timerDisplayStyle;
+    
+    timerDisplayStyleSelect.addEventListener('change', (e) => {
+        timerDisplayStyle = e.target.value;
+        localStorage.setItem('timerDisplayStyle', timerDisplayStyle);
+    });
+}
 function switchTimerMode(mode) {
     timerMode = mode;
     localStorage.setItem('timerMode', mode);
@@ -1101,12 +1112,26 @@ function startTimer() {
     startTime = Date.now(); 
     timerState = 'timing'; 
     setTimerClass('timer-running');
+    
+    if (timerDisplayStyle === 'hide') {
+        timerDisplay.textContent = '⚡ SOLVING ⚡';
+    }
+    
     timerInterval = setInterval(() => {
+        if (timerDisplayStyle === 'hide') {
+            return;
+        }
         const e = Date.now() - startTime;
         const m = Math.floor(e / 60000), 
         s = Math.floor((e % 60000) / 1000);
-        timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
-    }, 100);
+        
+        if (timerDisplayStyle === 'seconds') {
+            const totalSeconds = Math.floor(e / 1000);
+            timerDisplay.textContent = m > 0 ? `${m * 60 + s}` : `${totalSeconds}`;
+        } else {
+            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
+        }
+    }, timerDisplayStyle === 'seconds' ? 1000 : 100);
 }
 
 function stopTimer(isDNF = false) {
