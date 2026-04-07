@@ -1051,14 +1051,20 @@ function setTimerClass(cls) {
     timerDisplay.className = 'timer-display font-black tracking-tighter' + (cls ? ' ' + cls : '');
 }
 
-function formatTime(ms, status = 'ok') {
+function formatTime(ms, status = 'ok', forceMilliseconds = false) {
     if (status === 'dnf') return 'DNF';
     const total = ms + (status === '+2' ? 2000 : 0);
     const m = Math.floor(total / 60000);
     const s = Math.floor((total % 60000) / 1000);
     const c = Math.floor((total % 1000) / 10);
     
-    // Use window.timerDisplayStyle (global variable)
+    // For history display (forceMilliseconds = true), always show s.ms format
+    if (forceMilliseconds) {
+        if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+        return `${s}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+    }
+    
+    // For live timer display, respect user preference
     const style = window.timerDisplayStyle || 'milliseconds';
     
     if (style === 'seconds') {
@@ -1068,6 +1074,8 @@ function formatTime(ms, status = 'ok') {
     } else if (style === 'milliseconds') {
         if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
         return `${s}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+    } else if (style === 'hide') {
+        return '--:--';
     }
     
     // Default milliseconds
@@ -1255,19 +1263,26 @@ window.addEventListener('keyup', e => {
     if (anyModalOpen()) return;
     if (timerMode !== 'default' || !window.defaultTimerEnabled) return;
     if (e.code === 'Space') {
-        e.preventDefault(); clearTimeout(holdTimeout);
-        if (timerState === 'ready') { clearInterval(inspectionTimer); inspectionTimer = null; startTimer(); }
+        e.preventDefault(); 
+        clearTimeout(holdTimeout);
+        if (timerState === 'ready') { 
+            clearInterval(inspectionTimer); 
+            inspectionTimer = null; 
+            startTimer(); 
+        }
         else if (timerState === 'arming') {
-    if (!settings.inspectionEnabled) {
-        // Start timer immediately when inspection is disabled
-        clearInterval(inspectionTimer);
-        inspectionTimer = null;
-        startTimer();
-    } else {
-        timerState = 'inspecting'; 
-        setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
-    }
-}
+            // If we're in arming state (either from inspection or no inspection)
+            // Do NOT start timer - just go back to idle or inspection
+            if (!settings.inspectionEnabled) {
+                // When inspection is disabled, going back to idle
+                timerState = 'idle'; 
+                setTimerClass(''); 
+                timerDisplay.textContent = formatTime(0);
+            } else {
+                timerState = 'inspecting'; 
+                setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
+            }
+        }
     }
 });
 
@@ -1286,17 +1301,24 @@ timerCon.addEventListener('touchstart', e => {
 timerCon.addEventListener('touchend', e => {
     if (anyModalOpen()) return;
     if (timerMode !== 'default' || !window.defaultTimerEnabled) return;
-    e.preventDefault(); clearTimeout(holdTimeout);
-    if (timerState === 'ready') { clearInterval(inspectionTimer); inspectionTimer = null; startTimer(); }
+    e.preventDefault(); 
+    clearTimeout(holdTimeout);
+    if (timerState === 'ready') { 
+        clearInterval(inspectionTimer); 
+        inspectionTimer = null; 
+        startTimer(); 
+    }
     else if (timerState === 'arming') {
         if (!settings.inspectionEnabled) {
-            timerState = 'stopped'; setTimerClass(''); timerDisplay.textContent = formatTime(0);
+            timerState = 'idle'; 
+            setTimerClass(''); 
+            timerDisplay.textContent = formatTime(0);
         } else {
-            timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
+            timerState = 'inspecting'; 
+            setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
         }
     }
 }, { passive: false });
-
 
 // ═══════════════════════════════════════════════════════════════
 //  HISTORY + STATS (same as before)
@@ -1317,7 +1339,7 @@ function renderHistory() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="p-2">${evTimes.length - i}</td>
-            <td class="p-2 ${t.status==='dnf'?'status-dnf':t.status==='+2'?'status-plus2':''}">${formatTime(t.baseTime, t.status)}</td>
+<td class="p-2 ${t.status==='dnf'?'status-dnf':t.status==='+2'?'status-plus2':''}">${formatTime(t.baseTime, t.status, true)}</td>
             <td class="p-2"><div class="flex justify-center items-center gap-2">
                 <button data-a="plus2" data-i="${oi}" class="font-bold text-yellow-400 w-9 text-xs py-1 rounded bg-gray-700/50 hover:bg-gray-700">+2</button>
                 <button data-a="dnf"   data-i="${oi}" class="font-bold text-red-400   w-9 text-xs py-1 rounded bg-gray-700/50 hover:bg-gray-700">DNF</button>
