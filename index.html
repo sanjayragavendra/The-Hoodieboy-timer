@@ -731,11 +731,16 @@ function switchTimerMode(mode) {
     typingInput.style.display = 'none';
     bluetoothStatus.style.display = 'none';
     
-    if (mode === 'default') {
-        timerDisplay.style.display = 'block';
-        // Re-enable default timer controls
-        enableDefaultTimerControls(true);
-    } else if (mode === 'typing') {
+if (mode === 'default') {
+    timerDisplay.style.display = 'block';
+    enableDefaultTimerControls(true);
+    // Reset display based on current style
+    if (window.timerDisplayStyle === 'seconds') {
+        timerDisplay.textContent = '0';
+    } else {
+        timerDisplay.textContent = '0.00';
+    }
+} else if (mode === 'typing') {
         typingInput.style.display = 'block';
         typingInput.value = '';
         typingInput.placeholder = 'Enter time (e.g., 12.34)';
@@ -1111,20 +1116,29 @@ function startInspection() {
     // Request full-screen on mobile
     requestFullScreen();
     
-    if (!settings.inspectionEnabled) {
-        timerState = 'arming'; setTimerClass('timer-running');
-        holdTimeout = setTimeout(() => { timerState = 'ready'; setTimerClass('timer-ready'); }, 550);
-        return;
-    }
+   if (!settings.inspectionEnabled) {
+    timerState = 'arming'; 
+    setTimerClass('timer-running');
+    timerDisplay.textContent = '0.00';
+    holdTimeout = setTimeout(() => { 
+        timerState = 'ready'; 
+        setTimerClass('timer-ready');
+        timerDisplay.textContent = '0.00';
+    }, 550);
+    return;
+}
     timerState = 'inspecting'; inspectionPenalty = 0;
-    let sec = 0; timerDisplay.textContent = 15; setTimerClass('timer-inspecting');
+    let sec = 0; // Show inspection number without formatting
+timerDisplay.textContent = '15'; 
+setTimerClass('timer-inspecting');
     inspectionTimer = setInterval(() => {
         sec++;
         if (!inspectionTimer) return;
-        if (sec <= 15) {
-            timerDisplay.textContent = 15 - sec;
-            timerDisplay.classList.add('inspection-tick');
-            setTimeout(() => timerDisplay.classList.remove('inspection-tick'), 500);
+if (sec <= 15) {
+    timerDisplay.textContent = (15 - sec).toString();
+    timerDisplay.classList.add('inspection-tick');
+    setTimeout(() => timerDisplay.classList.remove('inspection-tick'), 500);
+}  setTimeout(() => timerDisplay.classList.remove('inspection-tick'), 500);
         }
         if (sec === 8 || sec === 12) speak(sec === 8 ? 'eight seconds' : 'twelve seconds');
         if (sec === 15) { inspectionPenalty = 2000; setTimerClass('timer-penalty'); }
@@ -1149,21 +1163,20 @@ function startTimer() {
             return;
         }
         const e = Date.now() - startTime;
-        const m = Math.floor(e / 60000), 
-        s = Math.floor((e % 60000) / 1000);
+        const m = Math.floor(e / 60000);
+        const s = Math.floor((e % 60000) / 1000);
         const cs = Math.floor((e % 1000) / 10);
         
         if (style === 'seconds') {
+            // Show just seconds, starting from 0
             const totalSeconds = Math.floor(e / 1000);
-            timerDisplay.textContent = m > 0 ? `${m * 60 + s}` : `${totalSeconds}`;
-} else {
-    // Show milliseconds with centiseconds (ss.ms format)
-    const cs = Math.floor((e % 1000) / 10);
-    timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}` : `${s}.${String(cs).padStart(2,'0')}`;
-}
+            timerDisplay.textContent = totalSeconds;
+        } else {
+            // Show milliseconds with centiseconds (ss.ms format)
+            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}` : `${s}.${String(cs).padStart(2,'0')}`;
+        }
     }, style === 'seconds' ? 1000 : 100);
 }
-
 function stopTimer(isDNF = false) {
     clearInterval(timerInterval); 
     clearInterval(inspectionTimer); 
@@ -1270,19 +1283,10 @@ window.addEventListener('keyup', e => {
             inspectionTimer = null; 
             startTimer(); 
         }
-        else if (timerState === 'arming') {
-            // If we're in arming state (either from inspection or no inspection)
-            // Do NOT start timer - just go back to idle or inspection
-            if (!settings.inspectionEnabled) {
-                // When inspection is disabled, going back to idle
-                timerState = 'idle'; 
-                setTimerClass(''); 
-                timerDisplay.textContent = formatTime(0);
-            } else {
-                timerState = 'inspecting'; 
-                setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
-            }
-        }
+       else if (timerState === 'arming') {
+    // Do nothing on keyup while arming - timer will start when ready state is reached
+    // Just keep waiting for the hold timeout
+}
     }
 });
 
