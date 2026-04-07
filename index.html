@@ -1058,16 +1058,21 @@ function formatTime(ms, status = 'ok') {
     const s = Math.floor((total % 60000) / 1000);
     const c = Math.floor((total % 1000) / 10);
     
-    if (timerDisplayStyle === 'seconds') {
+    // Use window.timerDisplayStyle (global variable)
+    const style = window.timerDisplayStyle || 'milliseconds';
+    
+    if (style === 'seconds') {
         const totalSeconds = Math.floor(total / 1000);
         if (m > 0) return `${m * 60 + s}` + (status === '+2' ? '+' : '');
         return `${totalSeconds}` + (status === '+2' ? '+' : '');
-    } else if (timerDisplayStyle === 'milliseconds') {
+    } else if (style === 'milliseconds') {
         if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
         return `${s}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
     }
     
-    return (m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}`) + '.' + String(c).padStart(2,'0') + (status === '+2' ? '+' : '');
+    // Default milliseconds
+    if (m > 0) return `${m}:${String(s).padStart(2,'0')}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
+    return `${s}.${String(c).padStart(2,'0')}` + (status === '+2' ? '+' : '');
 }
 
 function playBeep(freq = 440, dur = 150) {
@@ -1125,25 +1130,29 @@ function startTimer() {
     timerState = 'timing'; 
     setTimerClass('timer-running');
     
-    if (timerDisplayStyle === 'hide') {
+    const style = window.timerDisplayStyle || 'milliseconds';
+    
+    if (style === 'hide') {
         timerDisplay.textContent = '⚡ SOLVING ⚡';
     }
     
     timerInterval = setInterval(() => {
-        if (timerDisplayStyle === 'hide') {
+        if (style === 'hide') {
             return;
         }
         const e = Date.now() - startTime;
         const m = Math.floor(e / 60000), 
         s = Math.floor((e % 60000) / 1000);
+        const cs = Math.floor((e % 1000) / 10);
         
-        if (timerDisplayStyle === 'seconds') {
+        if (style === 'seconds') {
             const totalSeconds = Math.floor(e / 1000);
             timerDisplay.textContent = m > 0 ? `${m * 60 + s}` : `${totalSeconds}`;
         } else {
-            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : s;
+            // Show milliseconds with centiseconds
+            timerDisplay.textContent = m > 0 ? `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}` : `${s}.${String(cs).padStart(2,'0')}`;
         }
-    }, timerDisplayStyle === 'seconds' ? 1000 : 100);
+    }, style === 'seconds' ? 1000 : 100);
 }
 
 function stopTimer(isDNF = false) {
@@ -1248,12 +1257,16 @@ window.addEventListener('keyup', e => {
         e.preventDefault(); clearTimeout(holdTimeout);
         if (timerState === 'ready') { clearInterval(inspectionTimer); inspectionTimer = null; startTimer(); }
         else if (timerState === 'arming') {
-            if (!settings.inspectionEnabled) {
-                timerState = 'stopped'; setTimerClass(''); timerDisplay.textContent = formatTime(0);
-            } else {
-                timerState = 'inspecting'; setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
-            }
-        }
+    if (!settings.inspectionEnabled) {
+        // Start timer immediately when inspection is disabled
+        clearInterval(inspectionTimer);
+        inspectionTimer = null;
+        startTimer();
+    } else {
+        timerState = 'inspecting'; 
+        setTimerClass(inspectionPenalty > 0 ? 'timer-penalty' : 'timer-inspecting');
+    }
+}
     }
 });
 
